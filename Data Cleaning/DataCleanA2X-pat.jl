@@ -541,7 +541,9 @@ function CleanData()
     # PHASE 2&3:
     # Loop through each ticker:
     for i in keys(Full_data)
-        GetDetailedL1BAT(i, Full_data)
+        if size(Full_data[i])[1] != 0
+            GetDetailedL1BAT(i, Full_data)
+        end
     end
 end
 

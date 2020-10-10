@@ -1,45 +1,41 @@
-## Author: Patrick Chang and Ivan Jerivich
-# Script file to read in the A2X data and create
-# a clean and usable L1 BAT order book.
-
-# The cleaning follows three phases:
-# 1) Convert the raw message strings into a usable DataFrame format
-# 2) Convert the cleaned messages into a usable L1 BAT order book
-#      with separate columns for each item
-# 3) Create a more detailed dataframe with the addition of mid-price
-#      micro-price and inter-arrivals
-
-## Preamble
+### Title: Data Cleaning - A2X
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Convert the raw A2X data into a detailed and usable L1LOB format.
+### Structure:
+# 1. Preliminaries
+# 2. Cleaning functions
+# 3. Implement cleaning functions
+### Strategy:
+# Phase 1: Convert the raw message strings into a usable DataFrame format.
+# Phase 2: Convert the cleaned messages into a usable L1 BAT order book with separate columns for each item.
+# Phase 3: Create a more detailed dataframe with the addition of mid-price micro-price and inter-arrivals.
 #---------------------------------------------------------------------------
-using CSV, DataTables, CodecBzip2, DataFrames, JLD, Dates, ProgressMeter
 
+
+### 1. Preliminaries
+using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates# JLD, , , DataTables
 cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
-
-# Obtain Dictionary of securityId to the name of the ticker
+# Create a dictionary mapping the securityIds to the security names
+clearconsole()
 SecurityIDtoTickerName = CSV.read("Supporting information/SecurityIDtoTickerName.csv")
-secIDtoTickerName = Dict()
-for i in 1:size(SecurityIDtoTickerName)[1]
-    push!(secIDtoTickerName, SecurityIDtoTickerName[i,1] => SecurityIDtoTickerName[i,2])
-end
-
-## Phase 1 of cleaning
+secIDtoTickerName = Dict(SecurityIDtoTickerName[i, 1] => SecurityIDtoTickerName[i, 2] for i in 1:(size(SecurityIDtoTickerName)[1]))
 #---------------------------------------------------------------------------
-# Function to extract value of a specific field from a message string
-function getFromString(field::String, message::SubString{String}, delimiter::String)
+
+
+### 2. Cleaning Functions
+## Phase 1 - Convert raw data to TAQ data
+function getFromString(field::String, message::SubString{String}, delimiter::String) # Function to extract value of a specific field from a message string
     first_ind = findfirst(field*":", message)[end]+1
     last_ind = findfirst(delimiter, message[first_ind:end])[1]-2
     return message[first_ind:first_ind+last_ind]
 end
-# Function to convert unix time with nanoseconds into DateTime with milliseconds
-function Unix2DateTime(time::Float64)
+function Unix2DateTime(time::Float64) # Function to convert unix time with nanoseconds into DateTime with milliseconds
     seconds = time ÷ 10^9
     milliseconds = Millisecond(time ÷ 10^6 - seconds * 10^3)
     nanoseconds = Nanosecond(time % 10^6)
     return unix2datetime(seconds + 2*3600) + milliseconds + nanoseconds
 end
-# Function to create dataframe information from a message string.
-# The structure of fields to enter depend on the type of message string.
-function makeDataStruct(message::SubString{String}, type)
+function makeDataStruct(message::SubString{String}, type::Int) # Function to create dataframe information from a message string. The structure of fields to enter depend on the type of message string.
     if type == 2
         securityId = getFromString("securityId", message, ",")
         side = getFromString("side", message, ",")
@@ -73,7 +69,7 @@ function makeDataStruct(message::SubString{String}, type)
         timestamp = parse(Float64, getFromString("timestamp", message, "}"))
         date = Unix2DateTime(timestamp)
         return (securityId, timestamp, date, orderId, "AT", price, quantity, "", tradeRef, tradeType)
-    else    # type 6 message
+    else # type 6 message
         securityId = getFromString("securityId", message, ",")
         quantity = parse(Float64, getFromString("quantity", message, ","))
         price = parse(Float64, getFromString("price", message, ","))
@@ -83,117 +79,60 @@ function makeDataStruct(message::SubString{String}, type)
         return (securityId, timestamp, date, "", "TB", price, NaN, "", tradeRef, "")
     end
 end
-# Function to read in a day of data of all assets, remove useless information
-# construct dataframe of useful information for each asset. Each DataFrame is
-# stored as a value in a dictionary.
-function getTAQ(file::String)
-    ## Load in the Data
-    compressed = read(file)
-    decompress = transcode(Bzip2Decompressor, compressed)
-    data = String(decompress)
-
-    data_split = split(data, "\n")
-
-    ## Two sets of messeages to:
-    MdHeader = "MdHeader"   # Keep
-    type1 = "msgType:1"     # Remove
-
-    # Kepp all MdHeader messages
-    indkeep = occursin.(MdHeader, data_split)
-    data_split = data_split[indkeep]
-
-    # Remove all Type 1 messages
-    indkeep2 = occursin.(type1, data_split)
-    indkeep2 = .!indkeep2
-    data_split = data_split[indkeep2]
-
-    data_split2 = []
-    for i in 1:length(data_split)
-        push!(data_split2, split(data_split[i], " ")[2])
+function getTAQ(file::String) # Function to read in a day of data of all assets, remove useless information and construct dataframe of useful information for each asset. Each DataFrame is stored as a value in a dictionary.
+    # Load in the data and split into vector
+    rawData = read(file) |> x -> transcode(Bzip2Decompressor, x) |> y -> String(y) |> z -> split(z, "\n")
+    # Filter only the relevant messages
+    filter!(line -> occursin("msgType:2", line) || occursin("msgType:3", line) || occursin("msgType:4", line) || occursin("msgType:5", line) || occursin("msgType:6", line), rawData)
+    # Truncate useless information
+    messages = map(i -> split(rawData[i], " ")[2], 1:length(rawData))
+    # Get the securityIds and names of the tickers active during this day
+    securityIds = unique(getFromString.("securityId", messages, ","))
+    tickerNames = map(i -> secIDtoTickerName["securityId:" * securityIds[i]], 1:length(securityIds))
+    # Data Structure for each row of DataFrame of all assets
+    taqAllSecurities = DataFrame([String, Float64, DateTime, String, String, Float64, Float64, String, String, String], [:Security, :TimeStamp, :Date, :OrderRef, :Type, :Price, :Quantity, :Side, :TradeRef, :TradeType])
+    # Loop through the vector of messages
+    for line in messages
+        # Identify msgType
+        msgType = parse(Int, getFromString("msgType", line, ","))
+        # Extract TAQ format and push into dataframe
+        getDataStruct = makeDataStruct(line, msgType)
+        push!(taqAllSecurities, getDataStruct)
     end
-
-    ## Initialise DataFrames inside dictionary
-    type8 = "msgType:8"
-    indkeepT8 = occursin.(type8, data_split2)
-    mktInfo = data_split2[indkeepT8]
-    mktInfo_split = split.(mktInfo,"{")
-
-    # Get securityId and Name of ticker
-    secID = []
-    tickerName = []
-    for i in 1:length(mktInfo_split)
-        push!(secID, split(mktInfo_split[i][4], ",")[1])
-        push!(tickerName, split(mktInfo_split[i][4], ",")[2][7:end-2])
-    end
-
-    # Data Structure for each row of DataFrame for all assets
-    df = DataFrame(Security = String[], TimeStamp = Float64[], Date = DateTime[],
-    OrderRef = String[],Type = String[], Price = Float64[], Quantity = Float64[],
-    Side = String[], TradeRef = String[], TradeType = String[])
-
-    # Loop through data set
-    for i in 1:length(data_split2)
-        # Identify securityId and msgType
-        message = data_split2[i]
-        msgType = parse(Int, getFromString("msgType", message, ","))
-
-        # if appropriate message
-        if (msgType == 2 || msgType == 3 || msgType == 4 || msgType == 5 || msgType == 6)
-            # Extract DataFrame format to push into dataframe
-            getDataStruct = makeDataStruct(message, msgType)
-            push!(df, getDataStruct)
-        end
-    end
-
-    # Create dictionary of DataFrames for each asset
-    df_store = Dict()
-    for i in 1:length(secID)
-        Id = split(secID[i], ":")[2]
-        ind_Id = findall(x -> x == Id, df[:Security])
-        if length(ind_Id) == 0
-            df_empty = DataFrame(Security = String[], TimeStamp = Float64[], Date = DateTime[],
-            OrderRef = String[],Type = String[], Price = Float64[], Quantity = Float64[],
-            Side = String[], TradeRef = String[], TradeType = String[])
-            push!(df_store, secIDtoTickerName[secID[i]] => df_empty)
+    # Seperate securities by creating dictionary of DataFrames for each asset
+    taqDict = Dict()
+    for id in securityIds
+        idIndeces = findall(x -> x == id, taqAllSecurities[:, :Security])
+        if length(idIndeces) == 0
+            emptyDataFrame = DataFrame([String, Float64, DateTime, String, String, Float64, Float64, String, String, String], [:Security, :TimeStamp, :Date, :OrderRef, :Type, :Price, :Quantity, :Side, :TradeRef, :TradeType])
+            push!(taqDict, secIDtoTickerName[id] => emptyDataFrame)
         else
-            df_temp = df[ind_Id,:]
-            push!(df_store, secIDtoTickerName[secID[i]] => df_temp)
+            push!(taqDict, secIDtoTickerName["securityId:" * id] => taqAllSecurities[idIndeces, :])
         end
     end
-    return df_store, secID, tickerName
+    return taqDict, securityIds, tickerNames
 end
-# Function to streamline everything. Reads in all the data and returns a dictionary
-# of dataframes for the entire history of the A2X equities.
-function combineTAQ(filename)
-    Master_df = Dict()
-    @showprogress "Phase 1..." for i in 1:length(filename)
-        day_data = getTAQ(filename[i])
-        df_day = day_data[1]
-        ticker = day_data[3]
-
-        for j in 1:length(ticker)
-            if haskey(Master_df, ticker[j])
-                temp = [ Master_df[ticker[j]]; df_day[ticker[j]] ]
-                Master_df[ticker[j]] = temp
+function combineTAQ(files) # Function to streamline everything. Reads in all the data and returns a dictionary of dataframes for the entire history of the A2X equities.
+    MasterDictionary = Dict()
+    @showprogress "Phase 1:" for file in files
+        cleanDay = getTAQ(file)
+        taq = cleanDay[1]
+        tickers = cleanDay[3]
+        for ticker in tickers
+            if haskey(MasterDictionary, ticker)
+                MasterDictionary[ticker] = vcat(MasterDictionary[ticker], taq[ticker])
             else
-                push!(Master_df, ticker[j] => df_day[ticker[j]])
+                push!(MasterDictionary, ticker => taq[ticker])
             end
         end
     end
-    return Master_df
+    return MasterDictionary
 end
 
-
 ## Phase 2 - Build L1 Order Book
-#---------------------------------------------------------------------------
-# Function takes in 1 day of cleaned TAQ messages for 1 asset
-# and creates the L1 Bid Ask Trade with their associated volumes.
-# Trades are also classified into buyer- or seller-initiated.
-function MakeL1BAT(data::DataFrame)
+function MakeL1BAT(data::DataFrame) # Function takes in 1 day of cleaned TAQ messages for 1 asset and creates the L1 Bid Ask Trade with their associated volumes. Trades are also classified into buyer- or seller-initiated.
     ## Initialise dictionary for all bids and asks
-    Bid_dict = Dict()
-    Ask_dict = Dict()
-
+    Bid_dict = Dict(); Ask_dict = Dict()
     # Initialise DataFrame for L1 Order Book
     df = DataFrame(TimeStamp = Float64[], Date = DateTime[], EventType = String[],
     Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[],
@@ -408,12 +347,8 @@ function MakeL1BAT(data::DataFrame)
     return df
 end
 
-
-## Phase 3 - Extracts additional information from Order Book
-#---------------------------------------------------------------------------
-# Function takes in L1 order book and creates the micro and mid price,
-# and inter-arrivals
-function MakeDetailedL1BAT(data::DataFrame)
+## Phase 3 - Extract additional information from order book
+function MakeDetailedL1BAT(data::DataFrame) # Function takes in L1 order book and creates the micro and mid price,and inter-arrivals
     n = size(data)[1]
     # Initialise micro and mid price vectors
     micro_price = zeros(n, 1)
@@ -426,7 +361,7 @@ function MakeDetailedL1BAT(data::DataFrame)
             current_ask = data[:Ask][i]
             current_ask_vol = data[:AskVol][i]
             # Get index of current bid
-            indexof_current_best_bid = findlast(x -> x == "BID", data[:EventType][1:i])
+            indexof_current_best_bid = findprev(x -> x == "BID", data[:EventType], i)
             if isnothing(indexof_current_best_bid)    # no current bids in data; for start of dataset
                 # There are no current bids, therefore micro and mid price are NaNs
                 micro_price[i] = NaN
@@ -446,7 +381,7 @@ function MakeDetailedL1BAT(data::DataFrame)
             current_bid = data[:Bid][i]
             current_bid_vol = data[:BidVol][i]
             # Get index of current ask
-            indexof_current_best_ask = findlast(x -> x == "ASK", data[:EventType][1:i])
+            indexof_current_best_ask = findprev(x -> x == "ASK", data[:EventType], i)
             if isnothing(indexof_current_best_ask)
                 # There are no current asks, therefore micro and mid price are NaNs
                 micro_price[i] = NaN
@@ -468,7 +403,6 @@ function MakeDetailedL1BAT(data::DataFrame)
             mid_price[i] = mid_price[i-1]
         end
     end
-
     # Initialise vector of inter-arrivals and mid_price change
     τ = fill(NaN, n, 1)
     # Compute inter-arrivals
@@ -491,9 +425,7 @@ function MakeDetailedL1BAT(data::DataFrame)
     end
     return new_df
 end
-
-# Function to streamline the process of phase 2 and 3
-function GetDetailedL1BAT(ticker, FullData)
+function GetDetailedL1BAT(ticker, FullData) # Function to streamline the process of phase 2 and 3
     # Read in the ticker
     data_raw = FullData[ticker]
     dates = Date.(data_raw[:,3])
@@ -521,31 +453,26 @@ function GetDetailedL1BAT(ticker, FullData)
     for i in 2:length(dates_unique)
         master_df = [master_df; ticker_dict[Dates.format(dates_unique[i], "yyyy-mm-dd")]]
     end
-
     # Write the day as a CSV file
     CSV.write("Real Data/A2X/Cleaned/A2X_Cleaned_"*ticker*".csv", master_df)
 end
-
-## Piece everything together
 #---------------------------------------------------------------------------
-# Function to bring everything together and create
-function CleanData()
+
+
+### 3. Implement cleaning functions
+function CleanData() # Function to bring everything together and create
     # PHASE 1:
     # Find all the files
     files = readdir("Real Data/A2X/Raw/")
     filename = "Real Data/A2X/Raw/".*files
-    filename = filename[2:end]              # should be 911 items, if more remove DSstore.
     # Get data into usable format
     Full_data = combineTAQ(filename)
 
     # PHASE 2&3:
     # Loop through each ticker:
     for i in keys(Full_data)
-        if size(Full_data[i])[1] != 0
-            GetDetailedL1BAT(i, Full_data)
-        end
+        GetDetailedL1BAT(i, Full_data)
     end
 end
-
-## Obtain the clean data:
 CleanData()
+#---------------------------------------------------------------------------

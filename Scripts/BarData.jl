@@ -6,3 +6,10 @@
 # Note that we investigate three time-scales: 1min, 10min and 20min
 
 ## Preamble
+
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings
+
+cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
+
+A2X = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_NPN.csv")
+JSE = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQNPN.csv")

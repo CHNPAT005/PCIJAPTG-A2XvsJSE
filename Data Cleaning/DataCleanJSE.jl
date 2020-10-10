@@ -1,4 +1,4 @@
-## Author: Patrick Chang
+## Author: Patrick Chang & Ivan Jerivich
 # Script file to read in the JSE TAQ data. Extract
 # the useful TAQ information and obtain the mid-price, micro-price,
 # inter-arrivals and trade signs to write into flat files
@@ -7,7 +7,7 @@
 ## Preamble
 using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings
 
-cd("/Users/patrickchang1/HFT2020")
+cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
 #---------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ function MakeCleanTAQ(data::DataFrame)
     Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[],
     Trade = Float64[], TradeVol = Float64[])
     # Loop through each day and extract useful data
-    @showprogress "Computing..." for i in 1:length(dates_unique)
+    @showprogress "Filtering..." for i in 1:length(dates_unique)
         # Create extract data from each day
         tempday = dates_unique[i]
         tempdata = data[findall(x -> x == tempday, dates), :]
@@ -73,7 +73,7 @@ function MakeDetailedTAQ(data::DataFrame)
     Trade = Float64[], TradeVol = Float64[], MicroPrice = Float64[],
     MidPrice = Float64[], InterArrivals = Float64[])
     # Loop through each day and extract useful data
-    @showprogress "Computing..." for j in 1:length(dates_unique)
+    @showprogress "Building..." for j in 1:length(dates_unique)
         # Create extract data from each day
         tempday = dates_unique[j]
         tempdata = data[findall(x -> x == tempday, dates), :]
@@ -164,7 +164,7 @@ function ClassifyTrades(data::DataFrame)
     Trade = Float64[], TradeVol = Float64[], MicroPrice = Float64[],
     MidPrice = Float64[], InterArrivals = Float64[], TradeSign = String[])
     # Loop through each day and extract useful data
-    @showprogress "Computing..." for k in 1:length(dates_unique)
+    @showprogress "Classifying..." for k in 1:length(dates_unique)
         # Create extract data from each day
         tempday = dates_unique[k]
         tempdata = data[findall(x -> x == tempday, dates), :]
@@ -236,7 +236,7 @@ end
 ## Function to piece everything together
 function GetCleanedData(ticker::String)
     # Read in data
-    data = CSV.read("JSE/JSERAWTAQ"*ticker*".csv")
+    data = CSV.read("Real Data/JSE/Raw/JSERAWTAQ"*ticker*".csv")
     # Get data into usable format
     clean = MakeCleanTAQ(data)
     # Make additional information
@@ -244,7 +244,7 @@ function GetCleanedData(ticker::String)
     # Classify trades using Lee-Ready
     classified = ClassifyTrades(detail)
     # Write the day as a CSV file
-    CSV.write("JSE/JSECleanedTAQ"*ticker*".csv", classified)
+    CSV.write("Real Data/JSE/Cleaned/JSECleanedTAQ"*ticker*".csv", classified)
 end
 
 # SBK

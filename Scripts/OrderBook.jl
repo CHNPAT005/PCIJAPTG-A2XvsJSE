@@ -21,7 +21,7 @@ JSE = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQNPN.csv")
 function getA2XTradeSigns(data::DataFrame)
     # Initialise inferred classification
     inferredclassification = String[]
-    # Split the data into the
+    # Split the data into individual days
     dates = Date.(data[:,2])
     dates_unique = unique(dates)
     dates_unique = filter(x -> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
@@ -147,7 +147,7 @@ xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 
 function getA2XReturns(data::DataFrame)
     # Initialise returns
     returns = String[]
-    # Split the data into the
+    # Split the data into individual days
     dates = Date.(data[:,2])
     dates_unique = unique(dates)
     dates_unique = filter(x -> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
@@ -167,7 +167,7 @@ end
 function getJSEReturns(data::DataFrame)
     # Initialise returns
     returns = String[]
-    # Split the data into the
+    # Split the data into individual days
     dates = Date.(data[:,1])
     dates_unique = unique(dates)
     dates_unique = filter(x -> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)

@@ -184,7 +184,7 @@ function CleanA2X(data::DataFrame)
     # Loop through each day and extract useful data
     for k in 1:length(dates_unique)
         # Extract data from each day
-        tempday = dates_unique[i]
+        tempday = dates_unique[k]
         tempdata = data[findall(x -> x == tempday, dates), :]
         # Find the index where trades occur
         tradeinds = findall(x -> x == "TRADE", tempdata[:,3])

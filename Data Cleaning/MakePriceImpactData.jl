@@ -305,5 +305,5 @@ end
 A2X_PriceImpact = PriceImpactInfoA2X(A2X_tickers)
 JSE_PriceImpact = PriceImpactInfoJSE(JSE_tickers)
 
-save("Real Data/PriceImpactData/A2X_PriceImpact.jld", "A2X_PriceImpact", A2X_PriceImpact)
-save("Real Data/PriceImpactData/JSE_PriceImpact.jld", "JSE_PriceImpact", JSE_PriceImpact)
+save("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld", "A2X_PriceImpact", A2X_PriceImpact)
+save("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld", "JSE_PriceImpact", JSE_PriceImpact)

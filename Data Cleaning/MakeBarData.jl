@@ -93,20 +93,20 @@ function candlestick(data::DataFrame, date::String, interval::Int)
     ta = TimeArray(tempdata[:,1:5], timestamp = :TimeStamp)
     # Plot the data
     xtick = interval == 1 ? 10 : 1
-    p = plot(ta, seriestype = :candlestick, xrotation = 60, color = [:blue,:red], xticks = xtick, foreground_color_grid = :white)
-    f = "\\textrm{"
-    xlabel!(p, L"\\textrm{2019-07-15}")
-    ylabel!(p, L"\\textrm{Price ZAR [cents]}")
+    p = plot(ta, seriestype = :candlestick, xrotation = 60, color = [:blue,:red], xticks = xtick, foreground_color_grid = :white, xtickfont = 5, dpi = 300)
+    xlabel!(p, L"\textrm{2019-07-15}")
+    ylabel!(p, L"\textrm{Price [ZAR]}")
     return p
 end
 for interval in [1, 10, 20, 30]
     # JSE
     NPNJSEMicroBars = CSV.read(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
     candlestickJSE = candlestick(NPNJSEMicroBars, "2019-07-15", interval)
-    savefig(candlestickJSE, string("Plots/NPNJSEMicroPriceBars", interval, "min.pdf"))
+    savefig(candlestickJSE, string("Plots/NPNJSEMicroPriceBars", interval, "min.svg"))
     # A2X
     NPNA2XMicroBars = CSV.read(string("Real Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
+    NPNA2XMicroBars[:,2:5] = NPNA2XMicroBars[:,2:5] ./ 10^5
     candlestickA2X = candlestick(NPNA2XMicroBars, "2019-07-15", interval)
-    savefig(candlestickA2X, string("Plots/NPNA2XMicroPriceBars", interval, "min.pdf"))
+    savefig(candlestickA2X, string("Plots/NPNA2XMicroPriceBars", interval, "min.svg"))
 end
 #---------------------------------------------------------------------------

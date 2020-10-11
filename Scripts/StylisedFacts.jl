@@ -24,7 +24,7 @@ function getReturns(data::DataFrame, item::Symbol)
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
-    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
+    filter!(x-> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
     # Create master dataframe to store all useful information
     Rets = Float64[]
     # Loop through each day and piece the returns from there
@@ -79,7 +79,7 @@ function PLqqplot_Tail(obs, side) # Function to plot the QQ plot using the 95% q
     nobs = length(obs)
     quantiles⁰ = [PLquantile(i/nobs, α, xmin) for i in 1:nobs]
     # Density + QQ plot
-    density(getTail(obs, "Left"), label = "", color = :blue)
+    density(obs, label = "", color = :blue, dpi = 300)
     xlabel!(L"\textrm{Price fluctuations}")
     ylabel!(L"\textrm{Density}")
     # Plot the QQ plot
@@ -95,45 +95,25 @@ for interval in [1, 10, 20, 30]
     NPNJSEMicroBars = CSV.read(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
     NPNJSEMicroReturns = getReturns(NPNJSEMicroBars, :Close)
     # Return auto-correlations
-    ACFJSE = plot(1:100, autocor(convert.(Float64, NPNJSEMicroReturns), 1:100), label = "", seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", color = :black)
+    ACFJSE = plot(1:100, autocor(convert.(Float64, NPNJSEMicroReturns), 1:100), label = "", seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", color = :black, dpi = 300)
     hline!(ACFJSE, [quantile(Normal(), (1 + 0.95) / 2) / sqrt(length(NPNJSEMicroReturns))], color = :blue, label = "")
     hline!(ACFJSE, [quantile(Normal(), (1 - 0.95) / 2) / sqrt(length(NPNJSEMicroReturns))], color = :blue, label = "")
     savefig(ACFJSE, string("Plots/Returns ACF ", interval, "min (JSE).pdf"))
-    # Density plots of right and left tails of returns
+    # # Density plots of right and left tails of returns
+    DensityJSE = density(NPNJSEMicroReturns, label = "")
     rightTailDensityJSE = density(getTail(NPNJSEMicroReturns, "Right"), label = "")
-    xlabel!(rightTailDensityJSE, L"\textrm{Price fluctuations}")
-    ylabel!(rightTailDensityJSE, L"\textrm{Density}")
-    savefig(rightTailDensityJSE, string("Plots/Right Tail Returns Density ", interval, "min (JSE).pdf"))
-    leftTailDensityJSE = density(getTail(NPNJSEMicroReturns, "Left"), label = "")
-    xlabel!(leftTailDensityJSE, L"\textrm{Price fluctuations}")
-    ylabel!(leftTailDensityJSE, L"\textrm{Density}")
-    savefig(leftTailDensityJSE, string("Plots/Left Tail Returns Density ", interval, "min (JSE).pdf"))
+    # xlabel!(rightTailDensityJSE, L"\textrm{Price fluctuations}")
+    # ylabel!(rightTailDensityJSE, L"\textrm{Density}")
+    # savefig(rightTailDensityJSE, string("Plots/Right Tail Returns Density ", interval, "min (JSE).pdf"))
+    # leftTailDensityJSE = density(getTail(NPNJSEMicroReturns, "Left"), label = "")
+    # xlabel!(leftTailDensityJSE, L"\textrm{Price fluctuations}")
+    # ylabel!(leftTailDensityJSE, L"\textrm{Density}")
+    # savefig(leftTailDensityJSE, string("Plots/Left Tail Returns Density ", interval, "min (JSE).pdf"))
     # QQ-plots of right and left tails of returns relative to a fitted power-law distribution
     rightTailQQJSE = PLqqplot_Tail(NPNJSEMicroReturns, "Right")
     savefig(rightTailQQJSE, string("Plots/Right Tail Returns QQ-plot ", interval, "min (JSE).pdf"))
     leftTailQQJSE = PLqqplot_Tail(NPNJSEMicroReturns, "Left")
     savefig(leftTailQQJSE, string("Plots/Left Tail Returns QQ-plot ", interval, "min (JSE).pdf"))
     ## A2X
-    NPNA2XMicroBars = CSV.read(string("Real Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
-    NPNA2XMicroReturns = getReturns(NPNA2XMicroBars, :Close)
-    # Return auto-correlations
-    ACFA2X = plot(1:100, autocor(convert.(Float64, NPNA2XMicroReturns), 1:100), label = "", seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", color = :black)
-    hline!(ACFA2X, [quantile(Normal(), (1 + 0.95) / 2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = "")
-    hline!(ACFA2X, [quantile(Normal(), (1 - 0.95) / 2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = "")
-    savefig(ACFA2X, string("Plots/Returns ACF ", interval, "min (A2X).pdf"))
-    # Density plots of right and left tails of returns
-    rightTailDensityA2X = density(getTail(NPNA2XMicroReturns, "Right"), label = "")
-    xlabel!(rightTailDensityA2X, L"\textrm{Price fluctuations}")
-    ylabel!(rightTailDensityA2X, L"\textrm{Density}")
-    savefig(rightTailDensityA2X, string("Plots/Right Tail Returns Density ", interval, "min (A2X).pdf"))
-    leftTailDensityA2X = density(getTail(NPNA2XMicroReturns, "Left"), label = "")
-    xlabel!(leftTailDensityA2X, L"\textrm{Price fluctuations}")
-    ylabel!(leftTailDensityA2X, L"\textrm{Density}")
-    savefig(leftTailDensityA2X, string("Plots/Left Tail Returns Density ", interval, "min (A2X).pdf"))
-    # QQ-plots of right and left tails of returns relative to a fitted power-law distribution
-    rightTailQQA2X = PLqqplot_Tail(NPNA2XMicroReturns, "Right")
-    savefig(rightTailQQA2X, string("Plots/Right Tail Returns QQ-plot ", interval, "min (A2X).pdf"))
-    leftTailQQA2X = PLqqplot_Tail(NPNA2XMicroReturns, "Left")
-    savefig(leftTailQQA2X, string("Plots/Left Tail Returns QQ-plot ", interval, "min (A2X).pdf"))
 end
 #---------------------------------------------------------------------------

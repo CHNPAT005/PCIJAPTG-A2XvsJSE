@@ -15,9 +15,6 @@ JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "S
 # A2X tickers
 A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
-# Common tickers between the two exchanges
-common = ["SBK", "NPN", "SLM"]
-
 # Load the price impact data from each exchange
 
 A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")

@@ -24,7 +24,7 @@ function getReturns(data::DataFrame, item::Symbol)
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
-    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
+    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique) ################################ Fixed error
     # Create master dataframe to store all useful information
     Rets = Float64[]
     # Loop through each day and piece the returns from there
@@ -70,7 +70,7 @@ end
 
 function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot using the 95% quantile as x_min
     # Order and sort observations
-    obs = getTail(obs, side)
+    obs = getTail(obs, side) ############################# Fixed error
     # Get appropriate Xmin and α
     xmin = obs[1]
     α = PLalpha(obs, xmin)
@@ -87,7 +87,7 @@ function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot usin
         pos = (1, bbox(0.6, 0.5, 0.35, 0.35, :top))
         sub = 2
     end
-    density!(p, getTail(obs, side), label = market, color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :topleft)
+    density!(p, obs, label = market, color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :topleft) ############################# Fixed error (removed the call to GetTail)
     # Plot the QQ plot
     plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 5, guidefontsize = 8, linecolor = :black, markercolor = col, markerstrokecolor = col)
 end
@@ -150,7 +150,7 @@ function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot usin
     # Density + QQ plot
     col = market == "A2X" ? :blue : :red
     pos = market == "A2X" ? :blue : :red
-    density!(p, getTail(obs, side), label = "", color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}")
+    density!(p, obs, label = "", color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}")
     # Plot the QQ plot
     plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line],
     inset = (1, bbox(0.6, 0.1, 0.35, 0.35, :top)), subplot = 2, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{Power Law QQ-plot}", guidefontsize = 8, linecolor = :black, markercolor = col, markerstrokecolor = col)

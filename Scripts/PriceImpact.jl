@@ -1,4 +1,4 @@
-## Author: Patrick Chang
+## Author: Patrick Chang & Ivan Jerivich
 # Script file to plot the price impact of 10 equities
 # from JSE and A2X over the same period of 2019-01-02 to 2019-07-15.
 

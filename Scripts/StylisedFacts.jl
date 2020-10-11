@@ -24,7 +24,7 @@ function getReturns(data::DataFrame, item::Symbol)
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
-    filter!(x-> x >= Date("2019-01-01"), dates_unique)
+    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
     # Create master dataframe to store all useful information
     Rets = Float64[]
     # Loop through each day and piece the returns from there
@@ -114,5 +114,26 @@ for interval in [1, 10, 20, 30]
     leftTailQQJSE = PLqqplot_Tail(NPNJSEMicroReturns, "Left")
     savefig(leftTailQQJSE, string("Plots/Left Tail Returns QQ-plot ", interval, "min (JSE).pdf"))
     ## A2X
+    NPNA2XMicroBars = CSV.read(string("Real Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
+    NPNA2XMicroReturns = getReturns(NPNA2XMicroBars, :Close)
+    # Return auto-correlations
+    ACFA2X = plot(1:100, autocor(convert.(Float64, NPNA2XMicroReturns), 1:100), label = "", seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", color = :black)
+    hline!(ACFA2X, [quantile(Normal(), (1 + 0.95) / 2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = "")
+    hline!(ACFA2X, [quantile(Normal(), (1 - 0.95) / 2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = "")
+    savefig(ACFA2X, string("Plots/Returns ACF ", interval, "min (A2X).pdf"))
+    # Density plots of right and left tails of returns
+    rightTailDensityA2X = density(getTail(NPNA2XMicroReturns, "Right"), label = "")
+    xlabel!(rightTailDensityA2X, L"\textrm{Price fluctuations}")
+    ylabel!(rightTailDensityA2X, L"\textrm{Density}")
+    savefig(rightTailDensityA2X, string("Plots/Right Tail Returns Density ", interval, "min (A2X).pdf"))
+    leftTailDensityA2X = density(getTail(NPNA2XMicroReturns, "Left"), label = "")
+    xlabel!(leftTailDensityA2X, L"\textrm{Price fluctuations}")
+    ylabel!(leftTailDensityA2X, L"\textrm{Density}")
+    savefig(leftTailDensityA2X, string("Plots/Left Tail Returns Density ", interval, "min (A2X).pdf"))
+    # QQ-plots of right and left tails of returns relative to a fitted power-law distribution
+    rightTailQQA2X = PLqqplot_Tail(NPNA2XMicroReturns, "Right")
+    savefig(rightTailQQA2X, string("Plots/Right Tail Returns QQ-plot ", interval, "min (A2X).pdf"))
+    leftTailQQA2X = PLqqplot_Tail(NPNA2XMicroReturns, "Left")
+    savefig(leftTailQQA2X, string("Plots/Left Tail Returns QQ-plot ", interval, "min (A2X).pdf"))
 end
 #---------------------------------------------------------------------------

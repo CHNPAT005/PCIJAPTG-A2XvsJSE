@@ -1,4 +1,4 @@
-### Title: Stylized Facts
+### Title: Bar Data
 ### Authors: Patrick Chang and Ivan Jericevich
 ### Function: Generate micro-price bar data and candlestick plots
 ### Structure:

@@ -13,8 +13,8 @@ using CSV, DataFrames, JLD, Dates, ProgressMeter, Statistics
 cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
 NPN = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_NPN.csv")
-# SBK = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SBK.csv")
-# SLM = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SLM.csv")
+SBK = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SBK.csv")
+SLM = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SLM.csv")
 
 ## Functions:
 # Function to compare the number of correct classifications against the

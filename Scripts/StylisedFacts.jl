@@ -82,15 +82,18 @@ function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot usin
         col = :blue
         pos = (1, bbox(0.6, 0.03, 0.34, 0.34, :top))
         sub = 3
+        density!(p, obs, label = "A2X", color = col, legend = :topleft)
     else
         col = :red
         pos = (1, bbox(0.6, 0.5, 0.34, 0.34, :top))
         sub = 2
+        density!(p, obs, label = "JSE", color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :topleft)
     end
-    density!(p, obs, label = market, color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :topleft) ############################# Fixed error (removed the call to GetTail)
+
     # Plot the QQ plot
     plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 7, guidefontsize = 7, tickfont = 5, linecolor = :black, markercolor = col, markerstrokecolor = col)
 end
+
 for interval in [1, 10, 20, 30]
     NPNJSEMicroBars = CSV.read(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
     NPNJSEMicroReturns = getReturns(NPNJSEMicroBars, :Close)

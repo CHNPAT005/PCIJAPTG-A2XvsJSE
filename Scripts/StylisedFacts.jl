@@ -80,16 +80,16 @@ function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot usin
     # Density + QQ plot
     if market == "A2X"
         col = :blue
-        pos = (1, bbox(0.6, 0.05, 0.35, 0.35, :top))
+        pos = (1, bbox(0.6, 0.03, 0.34, 0.34, :top))
         sub = 3
     else
         col = :red
-        pos = (1, bbox(0.6, 0.5, 0.35, 0.35, :top))
+        pos = (1, bbox(0.6, 0.5, 0.34, 0.34, :top))
         sub = 2
     end
     density!(p, obs, label = market, color = col, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :topleft) ############################# Fixed error (removed the call to GetTail)
     # Plot the QQ plot
-    plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 5, guidefontsize = 8, linecolor = :black, markercolor = col, markerstrokecolor = col)
+    plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 7, guidefontsize = 7, tickfont = 5, linecolor = :black, markercolor = col, markerstrokecolor = col)
 end
 for interval in [1, 10, 20, 30]
     NPNJSEMicroBars = CSV.read(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
@@ -117,8 +117,8 @@ for interval in [1, 10, 20, 30]
     # Joint density plot of returns
     densityReturns = density(NPNJSEMicroReturns, label = "JSE", color = :red, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :bottomright)
     density!(densityReturns, NPNA2XMicroReturns, label = "A2X", color = :blue, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}")
-    qqplot!(densityReturns, Normal, NPNJSEMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{JSE - Normal QQ-plot}", markersize = 3, markercolor = :red, markerstrokecolor = :red, linecolor = :black, inset = (1, bbox(0.6, 0.1, 0.35, 0.35, :top)), subplot = 2, legend = :none, guidefontsize = 8, xrotation = 60)
-    qqplot!(densityReturns, Normal, NPNA2XMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{A2X - Normal QQ-plot}", markersize = 3, markercolor = :blue, markerstrokecolor = :blue, linecolor = :black, inset = (1, bbox(0.08, 0.1, 0.35, 0.35, :top)), subplot = 3, legend = :none, guidefontsize = 8, xrotation = 60)
+    qqplot!(densityReturns, Normal, NPNJSEMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{JSE - Normal QQ-plot}", markersize = 3, markercolor = :red, markerstrokecolor = :red, linecolor = :black, inset = (1, bbox(0.6, 0.1, 0.35, 0.35, :top)), subplot = 2, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
+    qqplot!(densityReturns, Normal, NPNA2XMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{A2X - Normal QQ-plot}", markersize = 3, markercolor = :blue, markerstrokecolor = :blue, linecolor = :black, inset = (1, bbox(0.08, 0.1, 0.35, 0.35, :top)), subplot = 3, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
     savefig(densityReturns, string("Plots/Returns Distribution ", interval, "min.pdf"))
 end
 

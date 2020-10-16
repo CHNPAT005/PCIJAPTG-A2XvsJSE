@@ -130,8 +130,8 @@ xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 
 
 JSE_OF = plot(1:lags, autocor(JSEOrderFlow, 1:lags),
 seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black)
-hline!(JSE_OF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSEOrderFlow))], color = :blue)
-hline!(JSE_OF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSEOrderFlow))], color = :blue)
+hline!(JSE_OF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
+hline!(JSE_OF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
 plot!(JSE_OF, 1:lags, autocor(JSEOrderFlow, 1:lags), xscale = :log10,
 inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "",
 xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black)
@@ -200,6 +200,6 @@ hline!(A2X_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(A2XRets))], c
 
 JSE_Rets_ACF = plot(1:lags, autocor(convert.(Float64, JSERets), 1:lags),
 seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
-hline!(JSE_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSERets))], color = :blue, label = "")
-hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSERets))], color = :blue, label = "")
+hline!(JSE_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSERets))], color = :red, label = "")
+hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSERets))], color = :red, label = "")
 # savefig(JSE_Rets_ACF, "Plots/JSE_Rets_ACF.svg")

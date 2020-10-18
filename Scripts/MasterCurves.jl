@@ -235,7 +235,7 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
     end
     val_inds = setdiff(1:20, findall(iszero,Δp))
     val_inds = setdiff(val_inds, findall(isnan,Δp))
-    return ω[val_inds], Δp[val_inds]
+    return ω[val_inds], Δp[val_inds], val_inds
 end
 
 ## Function to plot the price impact
@@ -285,3 +285,77 @@ PlotMaster(A2X_PriceImpact, A2X_tickers, A2XBuyParam, :buy)
 
 PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell)
 # savefig("Plots/A2XMasterSell.svg")
+
+## Compare the master curves from the exchanges
+#---------------------------------------------------------------------------
+## Function to plot the Master impact from each exchange together
+function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE = JSE_PriceImpact, dataA2X = A2X_PriceImpact, tickerJSE = JSE_tickers, tickerA2X = A2X_tickers, low = -1, up = 1)
+    # Extract liquidity
+    ADVJSE = dataJSE[3]
+    ADVA2X = dataA2X[3]
+    # Extract appropriate side
+    if side == :buy
+        # Buyer-Initiated
+        dataJSE = dataJSE[1]
+        dataA2X = dataA2X[1]
+    elseif side == :sell
+        # Seller-Initiated
+        dataJSE = dataJSE[2]
+        dataA2X = dataA2X[2]
+    end
+    # Get Scaled impact from JSE
+    JSEΔp = fill(NaN, 20, 10)
+    JSEω = fill(NaN, 20, 10)
+    for i in 1:length(tickerJSE)
+        temp = getMasterImpact(dataJSE[tickerJSE[i]], ADVJSE[tickerJSE[i]], paramJSE, low = low, up = up)
+        inds = temp[3]
+        JSEΔp[inds, i] = temp[2]
+        JSEω[inds, i] = temp[1]
+    end
+    # Get Scaled impact from A2X
+    A2XΔp = fill(NaN, 20, 10)
+    A2Xω = fill(NaN, 20, 10)
+    for i in 1:length(tickerA2X)
+        temp = getMasterImpact(dataA2X[tickerA2X[i]], ADVA2X[tickerA2X[i]], paramA2X, low = low, up = up)
+        inds = temp[3]
+        A2XΔp[inds, i] = temp[2]
+        A2Xω[inds, i] = temp[1]
+    end
+    # Get the mean and std
+    collapsedJSEω = mean(JSEω,dims=2)
+    collapsedJSEΔp = mean(JSEΔp,dims=2)
+    varJSEΔp = std(JSEΔp,dims=2)
+
+    collapsedA2Xω = fill(0.0, 20, 1)
+    collapsedA2XΔp = fill(0.0, 20, 1)
+    varA2XΔp = fill(0.0, 20, 1)
+
+    for i in 1:20
+        collapsedA2Xω[i] = mean(filter(!isnan, A2Xω[i,:]))
+        tempΔp = filter(!isnan, A2XΔp[i,:])
+        collapsedA2XΔp[i] = mean(tempΔp)
+        varA2XΔp[i] = std(tempΔp)
+    end
+    q = quantile.(TDist(10-1), [0.975])
+    # Plot the values
+    # plot(collapsedJSEω, collapsedJSEΔp, ribbon = (q .* varJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
+    # plot!(log.(collapsedA2Xω), log10.(collapsedA2XΔp), ribbon = log10.(q .* varA2XΔp), fillalpha=.3, color = :blue, label = L"\textrm{A2X}")
+
+    plot(collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300, marker = (4, 0.8))
+    plot!((collapsedA2Xω), (collapsedA2XΔp), scale = :log10, color = :blue, label = L"\textrm{A2X}", marker = (4, 0.8))
+
+    # Add appropriate label
+    if side == :buy
+        xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
+        ylabel!(L"\Delta p^* C^{\gamma}")
+    elseif side == :sell
+        xlabel!(L"\textrm{Seller-Initiated: } \omega^* / C^{\delta}")
+        ylabel!(L"\Delta p^* C^{\gamma}")
+    end
+end
+
+PlotCompare(:buy, JSEBuyParam, A2XBuyParam)
+# savefig("Plots/MasterBuy.svg")
+
+PlotCompare(:sell, JSESellParam, A2XSellParam)
+# savefig("Plots/MasterSell.svg")

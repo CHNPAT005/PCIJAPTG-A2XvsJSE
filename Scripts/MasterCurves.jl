@@ -336,6 +336,26 @@ function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE =
         collapsedA2XΔp[i] = mean(tempΔp)
         varA2XΔp[i] = std(tempΔp)
     end
+    # # Get the quantiles
+    # A2Xerlow = fill(0.0, 20, 1)
+    # A2Xerup = fill(0.0, 20, 1)
+    # JSEerlow = zeros(20, 1)
+    # JSEerup = zeros(20, 1)
+    # for i in 1:20
+    #     A2XtempΔp = sort(filter(!isnan, A2XΔp[i,:]))
+    #     # n = length(A2XtempΔp)
+    #     # A2Xerlow[i] = A2XtempΔp[Int(ceil(n*0.25))]
+    #     # A2Xerup[i] = A2XtempΔp[Int(ceil(n*0.75))]
+    #     A2Xerlow[i] = quantile(A2XtempΔp, [0.25])[1]
+    #     A2Xerup[i] = quantile(A2XtempΔp, [0.75])[1]
+    #
+    #     JSEtempΔp = sort(filter(!isnan, JSEΔp[i,:]))
+    #     # n = length(JSEtempΔp)
+    #     # JSEerlow[i] = JSEtempΔp[Int(ceil(n*0.25))]
+    #     # JSEerup[i] = JSEtempΔp[Int(ceil(n*0.75))]
+    #     JSEerlow[i] = quantile(JSEtempΔp, [0.25])[1]
+    #     JSEerup[i] = quantile(JSEtempΔp, [0.75])[1]
+    # end
     q = quantile.(TDist(10-1), [0.975])
     # Plot the values
     # plot(collapsedJSEω, collapsedJSEΔp, ribbon = (q .* varJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
@@ -346,6 +366,8 @@ function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE =
 
     # Add appropriate label
     if side == :buy
+        # plot(collapsedJSEω, collapsedJSEΔp, ribbon = (collapsedJSEΔp .- JSEerlow, JSEerup .- collapsedJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
+        # plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (collapsedA2XΔp .- A2Xerlow, A2Xerup .- collapsedA2XΔp), fillalpha=.3, scale = :log10, color = :blue, label = L"\textrm{A2X}")
         xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
         ylabel!(L"\Delta p^* C^{\gamma}")
     elseif side == :sell

@@ -289,7 +289,7 @@ PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell)
 ## Compare the master curves from the exchanges
 #---------------------------------------------------------------------------
 ## Function to plot the Master impact from each exchange together
-function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE = JSE_PriceImpact, dataA2X = A2X_PriceImpact, tickerJSE = JSE_tickers, tickerA2X = A2X_tickers, low = -1, up = 1)
+function PlotCompare(p, side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE = JSE_PriceImpact, dataA2X = A2X_PriceImpact, tickerJSE = JSE_tickers, tickerA2X = A2X_tickers, low = -1, up = 1)
     # Extract liquidity
     ADVJSE = dataJSE[3]
     ADVA2X = dataA2X[3]
@@ -315,10 +315,12 @@ function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE =
     # Get Scaled impact from A2X
     A2XΔp = fill(NaN, 20, 10)
     A2Xω = fill(NaN, 20, 10)
+    scalingParameter = side == :sell ? 9000 : 1
     for i in 1:length(tickerA2X)
         temp = getMasterImpact(dataA2X[tickerA2X[i]], ADVA2X[tickerA2X[i]], paramA2X, low = low, up = up)
         inds = temp[3]
-        A2XΔp[inds, i] = temp[2]
+        z = temp[2] ./ scalingParameter
+        A2XΔp[inds, i] = z
         A2Xω[inds, i] = temp[1]
     end
     # Get the mean and std
@@ -333,51 +335,57 @@ function PlotCompare(side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE =
     for i in 1:20
         collapsedA2Xω[i] = mean(filter(!isnan, A2Xω[i,:]))
         tempΔp = filter(!isnan, A2XΔp[i,:])
-        collapsedA2XΔp[i] = mean(tempΔp)
-        varA2XΔp[i] = std(tempΔp)
+        collapsedA2XΔp[i] = mean(tempΔp)# / 10000
+        varA2XΔp[i] = std(tempΔp)# / 10000
     end
-    # # Get the quantiles
-    # A2Xerlow = fill(0.0, 20, 1)
-    # A2Xerup = fill(0.0, 20, 1)
-    # JSEerlow = zeros(20, 1)
-    # JSEerup = zeros(20, 1)
-    # for i in 1:20
-    #     A2XtempΔp = sort(filter(!isnan, A2XΔp[i,:]))
-    #     # n = length(A2XtempΔp)
-    #     # A2Xerlow[i] = A2XtempΔp[Int(ceil(n*0.25))]
-    #     # A2Xerup[i] = A2XtempΔp[Int(ceil(n*0.75))]
-    #     A2Xerlow[i] = quantile(A2XtempΔp, [0.25])[1]
-    #     A2Xerup[i] = quantile(A2XtempΔp, [0.75])[1]
-    #
-    #     JSEtempΔp = sort(filter(!isnan, JSEΔp[i,:]))
-    #     # n = length(JSEtempΔp)
-    #     # JSEerlow[i] = JSEtempΔp[Int(ceil(n*0.25))]
-    #     # JSEerup[i] = JSEtempΔp[Int(ceil(n*0.75))]
-    #     JSEerlow[i] = quantile(JSEtempΔp, [0.25])[1]
-    #     JSEerup[i] = quantile(JSEtempΔp, [0.75])[1]
-    # end
-    q = quantile.(TDist(10-1), [0.975])
-    # Plot the values
-    # plot(collapsedJSEω, collapsedJSEΔp, ribbon = (q .* varJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
-    # plot!(log.(collapsedA2Xω), log10.(collapsedA2XΔp), ribbon = log10.(q .* varA2XΔp), fillalpha=.3, color = :blue, label = L"\textrm{A2X}")
+    # Get the quantiles
+    A2Xerlow = fill(0.0, 20, 1)
+    A2Xerup = fill(0.0, 20, 1)
+    JSEerlow = zeros(20, 1)
+    JSEerup = zeros(20, 1)
+    for i in 1:20
+        A2XtempΔp = sort(filter(!isnan, A2XΔp[i,:]))
+        n = length(A2XtempΔp)
+        #A2Xerlow[i] = A2XtempΔp[Int(ceil(n*0.25))]
+        #A2Xerup[i] = A2XtempΔp[Int(ceil(n*0.75))]
+        A2Xerlow[i] = quantile(A2XtempΔp, 0.05)
+        A2Xerup[i] = quantile(A2XtempΔp, 0.95)
 
-    plot(collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300, marker = (4, 0.8))
-    plot!((collapsedA2Xω), (collapsedA2XΔp), scale = :log10, color = :blue, label = L"\textrm{A2X}", marker = (4, 0.8))
+        JSEtempΔp = sort(filter(!isnan, JSEΔp[i,:]))
+        #JSEerlow[i] = JSEtempΔp[Int(ceil(n*0.25))]
+        #JSEerup[i] = JSEtempΔp[Int(ceil(n*0.75))]
+        JSEerlow[i] = quantile(JSEtempΔp, 0.05)
+        JSEerup[i] = quantile(JSEtempΔp, 0.95)
+    end
+    q = quantile(TDist(10-1), 0.975)
+    # Plot the values
+    #plot(collapsedJSEω, collapsedJSEΔp, ribbon = (q .* varJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
+    #plot!(log.(collapsedA2Xω), log10.(collapsedA2XΔp), ribbon = log10.(q .* varA2XΔp), fillalpha=.3, color = :blue, label = L"\textrm{A2X}")
+
+    #plot(collapsedJSEω, collapsedJSEΔp, scale = :log10, markercolor = :red, markerstrokecolor = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300, marker = (4, 0.8))
+    #plot!((collapsedA2Xω), (collapsedA2XΔp / 10000), scale = :log10, markercolor = :blue, markerstrokecolor = :blue, label = L"\textrm{A2X}", marker = (4, 0.8))
 
     # Add appropriate label
     if side == :buy
-        # plot(collapsedJSEω, collapsedJSEΔp, ribbon = (collapsedJSEΔp .- JSEerlow, JSEerup .- collapsedJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = L"\textrm{JSE}", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
-        # plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (collapsedA2XΔp .- A2Xerlow, A2Xerup .- collapsedA2XΔp), fillalpha=.3, scale = :log10, color = :blue, label = L"\textrm{A2X}")
+        plot!(p, collapsedJSEω, collapsedJSEΔp, ribbon = (collapsedJSEΔp .- JSEerlow, JSEerup .- collapsedJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
+        plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Buyer}", seriestype = :scatter)
+        plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (collapsedA2XΔp .- A2Xerlow, A2Xerup .- collapsedA2XΔp), fillalpha=.3, scale = :log10, color = :blue, label = "")
+        plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Buyer}", seriestype = :scatter)
         xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
         ylabel!(L"\Delta p^* C^{\gamma}")
     elseif side == :sell
-        xlabel!(L"\textrm{Seller-Initiated: } \omega^* / C^{\delta}")
-        ylabel!(L"\Delta p^* C^{\gamma}")
+        plot!(p, collapsedJSEω, collapsedJSEΔp, ribbon = (max.(0, collapsedJSEΔp .- JSEerlow), max.(0, JSEerup .- collapsedJSEΔp)), fillalpha=.3, scale = :log10, color = :red, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
+        plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Seller}", seriestype = :scatter, markershape = :utriangle)
+        plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (max.(0, collapsedA2XΔp .- A2Xerlow), max.(0, A2Xerup .- collapsedA2XΔp)), fillalpha=.3, color = :blue, label = "", scale = :log10) #
+        plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Seller}", seriestype = :scatter, markershape = :utriangle)
+        xlabel!(p, L"\textrm{Seller-Initiated: } \omega^* / C^{\delta}")
+        ylabel!(p, L"\Delta p^* C^{\gamma}")
     end
 end
 
-PlotCompare(:buy, JSEBuyParam, A2XBuyParam)
+p = plot()
+PlotCompare(p, :buy, JSEBuyParam, A2XBuyParam)
 # savefig("Plots/MasterBuy.svg")
 
-PlotCompare(:sell, JSESellParam, A2XSellParam)
+PlotCompare(p, :sell, JSESellParam, A2XSellParam)
 # savefig("Plots/MasterSell.svg")

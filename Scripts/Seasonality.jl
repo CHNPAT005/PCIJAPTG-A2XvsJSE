@@ -68,10 +68,15 @@ function AveNormVol(data::DataFrame)
     times = Time.(data[1:nbins,1])
     return times, AggregatedNormData
 end
-
 JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min)
-plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = L"\textrm{A2X}", fillcolor = :blue, dpi = 300, legend = :topleft)
-plot!(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = L"\textrm{JSE}", fillcolor = :red)
+
+# A2X
+plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
+xlabel!(L"\textrm{Time of day}")
+ylabel!(L"\textrm{Normalised Volume}")
+
+# JSE
+plot(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = "", fillcolor = :red)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Volume}")
 # savefig("Assignment2/Plots/SBK_AveNormVol.svg")

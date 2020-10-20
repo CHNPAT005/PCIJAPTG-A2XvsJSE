@@ -13,8 +13,7 @@ using Statistics, LaTeXStrings, TimeSeries
 cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
 A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-z = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQNPN.csv")
-abs.(diff(log.(z[:,:MicroPrice])))
+
 function CombineTransactionBarData(exchange::String, granularity::Int64, tickers::Vector{String})
     TradesBars = CSV.read(string("Real Data/", exchange, "/Bar/", tickers[1], "TradesBars", granularity, "min.csv"))# |> y -> filter(x -> !isnan(x.N), y)
     @showprogress "Computing..." for ticker in tickers[2:end]

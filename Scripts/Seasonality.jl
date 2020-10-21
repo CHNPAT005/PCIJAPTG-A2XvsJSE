@@ -24,7 +24,7 @@ function CombineTransactionBarData(exchange::String, granularity::Int64, tickers
         if sum(.!isnan.(n)) == 0
             return NaN
         else
-            indeces = findall(.!isnan.(n))
+            indeces = findall(!isnan, n))
             return sum(v[indeces] .* n[indeces]) / sum(n[indeces])
         end
     end
@@ -33,8 +33,7 @@ function CombineTransactionBarData(exchange::String, granularity::Int64, tickers
     df = combine([:Volume, :N] => (v, n) -> (v = WeightedAverage(v, n)), gdf) # Apply and combine
     return df
 end
-JSETradesBars1min = CombineTransactionBarData("JSE", 1, JSE_tickers); JSETradesBars10min = CombineTransactionBarData("JSE", 10, JSE_tickers)
-A2XTradesBars1min = CombineTransactionBarData("A2X", 1, A2X_tickers); A2XTradesBars10min = CombineTransactionBarData("A2X", 10, A2X_tickers)
+JSETradesBars10min = CombineTransactionBarData("JSE", 10, JSE_tickers)'; A2XTradesBars10min = CombineTransactionBarData("A2X", 10, A2X_tickers)
 #---------------------------------------------------------------------------
 # 1: Aggregate volume across the day normalised by daily volume
 #---------------------------------------------------------------------------
@@ -67,15 +66,16 @@ function AveNormVol(data::DataFrame)
     times = Time.(data[1:nbins,1])
     return times, AggregatedNormData
 end
-
 JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min)
-plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = L"\textrm{A2X}", fillcolor = :blue, dpi = 300, legend = :topleft)
-plot!(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = L"\textrm{JSE}", fillcolor = :red)
+volumeSeasonality = load("Computed Data/VolumeSeasonality.jld"); JSEVolumeSeasonality = volumeSeasonality["JSEVolumeSeasonality"]; A2XVolumeSeasonality = volumeSeasonality["A2XVolumeSeasonality"] # save("VolumeSeasonality.jld", "JSEVolumeSeasonality", JSEAveNormVol, "A2XVolumeSeasonality", A2XAveNormVol)
+# JSE
+plot(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topleft)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Volume}")
-# savefig("Assignment2/Plots/SBK_AveNormVol.svg")
-
-
+# A2X
+plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
+xlabel!(L"\textrm{Time of day}")
+ylabel!(L"\textrm{Normalised Volume}")
 
 #---------------------------------------------------------------------------
 # 2: Average absolute intraday returns normalised by absolute intraday returns
@@ -95,17 +95,15 @@ function getReturns(data::DataFrame)
         # Create extract data from each day
         tempday = dates_unique[k]
         tempdata = data[findall(x -> x == tempday, dates), :]
+        tempdata = tempdata[findall(!isnan, tempdata[:, :Trade]), :]
         # Pull out the item to make returns with
-        prices = tempdata[:, :MicroPrice]
-        # Returns are price fluctuations
-        indeces = findall(!isnan, prices)
-        ret = diff(log.(prices[indeces]))
+        prices = tempdata[:, :Trade]
+        ret = diff(log.(prices))
         # Append to vector of returns
-        append!(Master_df, DataFrame(TimeStamp = tempdata[indeces[2:end], 1], Return = ret))
+        append!(Master_df, DataFrame(TimeStamp = tempdata[2:end, 1], Return = ret))
     end
     return Master_df
 end
-
 function AveAbsRet(data::DataFrame, barsize::Integer)
     # Extract the dates of the data
     dates = Date.(data[:,1])
@@ -157,16 +155,16 @@ for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
     # Concactenate tickers
     append!(returnJSE, tempJSE); append!(returnA2X, tempA2X)
 end
-# save("returnJSE.jld", "returnJSE", returnJSE); save("returnA2X.jld", "returnA2X", returnA2X)# returnJSE = load("returnJSE.jld")["returnJSE"]; returnA2X = load("returnA2X.jld")["returnA2X"]
+# save("returnJSE.jld", "returnJSE", returnJSE); save("returnA2X.jld", "returnA2X", returnA2X)
+# returnJSE = load("returnJSE.jld")["returnJSE"]; returnA2X = load("returnA2X.jld")["returnA2X"]
 JSEReturnSeasonality = AveAbsRet(returnJSE, 10); A2XReturnSeasonality = AveAbsRet(returnA2X, 10)
-save("ReturnSeasonality.jld", "JSEReturnSeasonality", JSEReturnSeasonality, "A2XReturnSeasonality", A2XReturnSeasonality)
-returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeasonality = returnSeasonality["JSEReturnSeasonality"]; A2XReturnSeasonality = returnSeasonality["A2XReturnSeasonality"]
+returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeasonality = returnSeasonality["JSEReturnSeasonality"]; A2XReturnSeasonality = returnSeasonality["A2XReturnSeasonality"] # save("ReturnSeasonality.jld", "JSEReturnSeasonality", JSEReturnSeasonality, "A2XReturnSeasonality", A2XReturnSeasonality)
 # JSEBuy
-plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = L"\textrm{BDST}", fillcolor = :red, dpi = 300, legend = :topright)
+plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
 # A2X
-plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = L"\textrm{BDST}", fillcolor = :blue, dpi = 300, legend = :topright)
+plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
 
@@ -178,7 +176,7 @@ function getSpread(data::DataFrame)
     # Initialise Master dataframe to store the timestamp + spread
     Master_df = DataFrame(TimeStamp = DateTime[], Spread = Float64[])
     # Get unique dates and start from 2019-01-01 onwards
-    filter!(x-> Date("2019-01-01") <= Date(x) <= Date("2019-07-15"), data[:, 1])
+    filter!(x-> Date("2019-01-01") <= Date(x.TimeStamp) <= Date("2019-07-15"), data)
     # Loop through each item of data and push data into Master_df
     @showprogress "Computing..." for i in 1:size(data)[1]
         line = data[i,:]
@@ -252,7 +250,8 @@ for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
     # Concactenate tickers
     append!(spreadJSE, tempJSE); append!(spreadA2X, tempA2X)
 end
-# spreadJSE = load("spreadJSE.jld")["spreadJSE"]; spreadA2X = load("spreadA2X.jld")["spreadA2X"] # save("spreadJSE.jld", "spreadJSE", spreadJSE); save("spreadA2X.jld", "spreadA2X", spreadA2X)
+# save("spreadJSE.jld", "spreadJSE", spreadJSE); save("spreadA2X.jld", "spreadA2X", spreadA2X)
+# spreadJSE = load("spreadJSE.jld")["spreadJSE"]; spreadA2X = load("spreadA2X.jld")["spreadA2X"]
 JSESpreadSeasonality = AveSpread(spreadJSE, 10); A2XSpreadSeasonality = AveSpread(spreadA2X, 10)
 spreadSeasonality = load("Computed Data/SpreadSeasonality.jld"); JSESpreadSeasonality = spreadSeasonality["JSESpreadSeasonality"]; A2XSpreadSeasonality = spreadSeasonality["A2XSpreadSeasonality"] # save("SpreadSeasonality.jld", "JSESpreadSeasonality", JSESpreadSeasonality, "A2XSpreadSeasonality", A2XSpreadSeasonality)
 # JSE

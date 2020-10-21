@@ -10,7 +10,7 @@
 ## Preamble
 using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots
 using Statistics, LaTeXStrings, TimeSeries
-cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
+cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
 A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
@@ -67,18 +67,14 @@ function AveNormVol(data::DataFrame)
     times = Time.(data[1:nbins,1])
     return times, AggregatedNormData
 end
+
 JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min)
-
-# A2X
-plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Volume}")
-
-# JSE
-plot(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = "", fillcolor = :red)
+plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = L"\textrm{A2X}", fillcolor = :blue, dpi = 300, legend = :topleft)
+plot!(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = L"\textrm{JSE}", fillcolor = :red)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Volume}")
 # savefig("Assignment2/Plots/SBK_AveNormVol.svg")
+
 
 
 #---------------------------------------------------------------------------
@@ -86,25 +82,56 @@ ylabel!(L"\textrm{Normalised Volume}")
 #---------------------------------------------------------------------------
 ## Function to compute the average absolute intraday returns normalised by
 # the average daily absolute intraday returns. We use VWAP prices from each bar.
-function AveAbsRet(data::DataFrame)
+function getReturns(data::DataFrame)
+    # Create master dataframe to store all useful information
+    Master_df = DataFrame(TimeStamp = DateTime[], Return = Float64[])
+    # Extract the dates
+    dates = Date.(data[:,1])
+    # Get unique dates and start from 2019-01-01 onwards
+    dates_unique = unique(dates)
+    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
+    # Loop through each day and piece the returns from there
+    @showprogress "Computing..." for k in 1:length(dates_unique)
+        # Create extract data from each day
+        tempday = dates_unique[k]
+        tempdata = data[findall(x -> x == tempday, dates), :]
+        # Pull out the item to make returns with
+        prices = tempdata[:, :MicroPrice]
+        # Returns are price fluctuations
+        indeces = findall(!isnan, prices)
+        ret = diff(log.(prices[indeces]))
+        # Append to vector of returns
+        append!(Master_df, DataFrame(TimeStamp = tempdata[indeces[2:end], 1], Return = ret))
+    end
+    return Master_df
+end
+
+function AveAbsRet(data::DataFrame, barsize::Integer)
     # Extract the dates of the data
     dates = Date.(data[:,1])
     dates_unique = unique(dates)
     # Number of bins of bars each day
-    nbins = length(findall(x->x==dates_unique[1], dates))-1
-    # Create a matrix to store the normalised absolute intraday returns of each bin over the various days
+    nbins = length(collect(Time(9,0):Minute(barsize):Time(16,50))) - 1
+    # Create a matrix to store the normalised spread of each bin over the various days
     NormData = zeros(nbins, length(dates_unique))
     # Loop through each day of data
     for i in 1:length(dates_unique)
-        # Extract the data for the day
-        tempdata = data[findall(x->x==dates_unique[i], dates),:]
-        # Get absolute intraday bar returns
-        AbsDailyRet = abs.(diff(log.(tempdata[:,7])))
+        # Create extract data from each day
+        tempday = dates_unique[i]
+        tempdata = data[findall(x->x == tempday, dates),:]
+        # Only keep data within continuous trading and remove the first minute corresponding to the auction call
+        start = DateTime(tempday) + Hour(9) + Minute(10)
+        close = DateTime(tempday) + Hour(16) + Minute(50)
+        # Create the bars
+        bars = vcat(DateTime(tempday) + Hour(9) + Minute(1), collect(start:Minute(barsize):close))
         # Get average absolute intraday bar returns
-        AveAbsDailyRet = mean(AbsDailyRet)
+        AveAbsDailyRet = mean(abs.(tempdata[:,2]))
         # Loop through each bin of the day
-        for j in 1:nbins
-            NormData[j, i] = AbsDailyRet[j] / AveAbsDailyRet
+        for j in 1:(length(bars)-1)
+            # filter out data within the bar
+            bardata = tempdata[findall(x-> x>bars[j] && x<=bars[j+1], tempdata[:,1]),:]
+            # Average spread in the bar normalised by average spread for the day
+            NormData[j, i] = mean(abs.(bardata[:,2])) / AveAbsDailyRet
         end
     end
     # Initialise vector of aggregated absolute intraday returns
@@ -113,27 +140,35 @@ function AveAbsRet(data::DataFrame)
     for i in 1:nbins
         AggregatedNormData[i] = mean(filter(!isnan, NormData[i,:]))
     end
-    times = Time.(data[2:(nbins+1),1])
+    times = collect(Time(9,10):Minute(barsize):Time(16,50))
     return times, AggregatedNormData
 end
-
-JSEBDT_AveAbsRet = AveAbsRet(JSETradesBars10minBDT)
-JSEBDST_AveAbsRet = AveAbsRet(JSETradesBars10minBDST)
-
-plot(JSEBDT_AveAbsRet[1], JSEBDT_AveAbsRet[2], seriestype = :bar, label = L"\textrm{BDT}", dpi = 300, alpha = 0.2, legend = :topright)
-plot!(JSEBDST_AveAbsRet[1], JSEBDST_AveAbsRet[2], seriestype = :bar, label = L"\textrm{BDST}", alpha = 0.2)
+# Read full cleaned data files for each ticker and concactenate spreads calculated tick-by-tick
+JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * JSE_tickers[1] * ".csv")
+A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
+DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+returnJSE = getReturns(JSE); returnA2X = getReturns(A2X)
+for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
+    JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * jseTicker * ".csv")
+    A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
+    # Ensure that the column names and ordering are the same
+    DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+    tempJSE = getReturns(JSE); tempA2X = getReturns(A2X)
+    # Concactenate tickers
+    append!(returnJSE, tempJSE); append!(returnA2X, tempA2X)
+end
+# save("returnJSE.jld", "returnJSE", returnJSE); save("returnA2X.jld", "returnA2X", returnA2X)# returnJSE = load("returnJSE.jld")["returnJSE"]; returnA2X = load("returnA2X.jld")["returnA2X"]
+JSEReturnSeasonality = AveAbsRet(returnJSE, 10); A2XReturnSeasonality = AveAbsRet(returnA2X, 10)
+save("ReturnSeasonality.jld", "JSEReturnSeasonality", JSEReturnSeasonality, "A2XReturnSeasonality", A2XReturnSeasonality)
+returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeasonality = returnSeasonality["JSEReturnSeasonality"]; A2XReturnSeasonality = returnSeasonality["A2XReturnSeasonality"]
+# JSEBuy
+plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = L"\textrm{BDST}", fillcolor = :red, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
-# savefig("Assignment2/Plots/SBK_AveAbsRet.svg")
-
-NPNBDT_AveAbsRet = AveAbsRet(NPNTradesBars10minBDT)
-NPNBDST_AveAbsRet = AveAbsRet(NPNTradesBars10minBDST)
-
-plot(NPNBDT_AveAbsRet[1], NPNBDT_AveAbsRet[2], seriestype = :bar, label = L"\textrm{BDT}", dpi = 300, alpha = 0.2, legend = :topright)
-plot!(NPNBDST_AveAbsRet[1], NPNBDST_AveAbsRet[2], seriestype = :bar, label = L"\textrm{BDST}", alpha = 0.2)
+# A2X
+plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = L"\textrm{BDST}", fillcolor = :blue, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
-# savefig("Assignment2/Plots/NPN_AveAbsRet.svg")
 
 #---------------------------------------------------------------------------
 # 3: Average spread normalised by the average daily spread
@@ -148,26 +183,24 @@ function getSpread(data::DataFrame)
     @showprogress "Computing..." for i in 1:size(data)[1]
         line = data[i,:]
         # If there is no mid-price then we don't compute spread
-        if !isnan(line[10])
+        if !isnan(line[11])
             # Check if current update is best bid or ask
             if line[2] == "BID" # If Bid
                 # Get Spread = 2* (midprice - best bid)
-                spread = 2 * abs(line[10] - line[3])
+                spread = 2 * abs(line[11] - line[3])
                 # Push data into Master_df
                 push!(Master_df, (line[1], spread))
             elseif line[2] == "ASK" # If ask
                 # Get spread: 2 * (best ask - midprice)
-                spread = 2 * abs(line[5] - line[10])
+                spread = 2 * abs(line[5] - line[11])
                 # Push data into Master_df
-                push!(Master_df, (line[1], spread, absReturn))
+                push!(Master_df, (line[1], spread))
             end # We don't consider trades when making the spread
         end
     end
     return Master_df
 end
-
-## Function to compute the average spread normalised by
-# the average daily spread
+## Function to compute the average spread normalised by the average daily spread
 function AveSpread(data::DataFrame, barsize::Integer)
     # Extract the dates of the data
     dates = Date.(data[:,1])
@@ -181,11 +214,11 @@ function AveSpread(data::DataFrame, barsize::Integer)
         # Create extract data from each day
         tempday = dates_unique[i]
         tempdata = data[findall(x->x == tempday, dates),:]
-        # Only keep data within continuous trading
-        start = DateTime(tempday) + Hour(9)
+        # Only keep data within continuous trading and remove the first minute corresponding to the auction call
+        start = DateTime(tempday) + Hour(9) + Minute(10)
         close = DateTime(tempday) + Hour(16) + Minute(50)
         # Create the bars
-        bars = collect(start:Minute(barsize):close)
+        bars = vcat(DateTime(tempday) + Hour(9) + Minute(1), collect(start:Minute(barsize):close))
         # Get average spread for the day
         AveDailySpread = mean(tempdata[:,2])
         # Loop through each bin of the day
@@ -205,23 +238,29 @@ function AveSpread(data::DataFrame, barsize::Integer)
     times = collect(Time(9,10):Minute(barsize):Time(16,50))
     return times, AggregatedNormData
 end
-
-
-SBKBDT_Spread = @pipe SBKBDT |> getSpread |> AveSpread(_, 10)
-SBKBDST_Spread = @pipe SBKBDST |> getSpread |> AveSpread(_, 10)
-
-plot(SBKBDT_Spread[1], SBKBDT_Spread[2], seriestype = :bar, label = L"\textrm{BDT}", dpi = 300, alpha = 0.2, legend = :topright)
-plot!(SBKBDST_Spread[1], SBKBDST_Spread[2], seriestype = :bar, label = L"\textrm{BDST}", alpha = 0.2)
+# Read full cleaned data files for each ticker and concactenate spreads calculated tick-by-tick
+JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * JSE_tickers[1] * ".csv")
+A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
+DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+spreadJSE = getSpread(JSE); spreadA2X = getSpread(A2X)
+for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
+    JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * jseTicker * ".csv")
+    A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
+    # Ensure that the column names and ordering are the same
+    DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+    tempJSE = getSpread(JSE); tempA2X = getSpread(A2X)
+    # Concactenate tickers
+    append!(spreadJSE, tempJSE); append!(spreadA2X, tempA2X)
+end
+# spreadJSE = load("spreadJSE.jld")["spreadJSE"]; spreadA2X = load("spreadA2X.jld")["spreadA2X"] # save("spreadJSE.jld", "spreadJSE", spreadJSE); save("spreadA2X.jld", "spreadA2X", spreadA2X)
+JSESpreadSeasonality = AveSpread(spreadJSE, 10); A2XSpreadSeasonality = AveSpread(spreadA2X, 10)
+spreadSeasonality = load("Computed Data/SpreadSeasonality.jld"); JSESpreadSeasonality = spreadSeasonality["JSESpreadSeasonality"]; A2XSpreadSeasonality = spreadSeasonality["A2XSpreadSeasonality"] # save("SpreadSeasonality.jld", "JSESpreadSeasonality", JSESpreadSeasonality, "A2XSpreadSeasonality", A2XSpreadSeasonality)
+# JSE
+plot(JSESpreadSeasonality[1], JSESpreadSeasonality[2], seriestype = :bar, label = L"\textrm{JSE}", dpi = 300, legend = :topright, fillcolor = :red)
+xlabel!(L"\textrm{Time of day}")
+ylabel!(L"\textrm{Normalised Spread}")
+# A2X
+plot(A2XSpreadSeasonality[1], A2XSpreadSeasonality[2], seriestype = :bar, label = L"\textrm{A2X}", fillcolor = :blue, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Spread}")
 # savefig("Assignment2/Plots/SBK_Spread.svg")
-
-
-NPNBDT_Spread = @pipe NPNBDT |> getSpread |> AveSpread(_, 10)
-NPNBDST_Spread = @pipe NPNBDST |> getSpread |> AveSpread(_, 10)
-
-plot(NPNBDT_Spread[1], NPNBDT_Spread[2], seriestype = :bar, label = L"\textrm{BDT}", dpi = 300, alpha = 0.2, legend = :topright)
-plot!(NPNBDST_Spread[1], NPNBDST_Spread[2], seriestype = :bar, label = L"\textrm{BDST}", alpha = 0.2)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Spread}")
-# savefig("Assignment2/Plots/NPN_Spread.svg")

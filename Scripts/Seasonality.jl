@@ -69,13 +69,15 @@ end
 JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min)
 volumeSeasonality = load("Computed Data/VolumeSeasonality.jld"); JSEVolumeSeasonality = volumeSeasonality["JSEVolumeSeasonality"]; A2XVolumeSeasonality = volumeSeasonality["A2XVolumeSeasonality"] # save("VolumeSeasonality.jld", "JSEVolumeSeasonality", JSEAveNormVol, "A2XVolumeSeasonality", A2XAveNormVol)
 # JSE
-plot(JSEAveNormVol[1], JSEAveNormVol[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topleft)
+plot(JSEVolumeSeasonality[1], JSEVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topleft)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Volume}")
+# savefig("Plots/JSEVolumeSeasonality.svg")
 # A2X
-plot(A2XAveNormVol[1], A2XAveNormVol[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
+plot(A2XVolumeSeasonality[1], A2XVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Volume}")
+# savefig("Plots/A2XVolumeSeasonality.svg")
 
 #---------------------------------------------------------------------------
 # 2: Average absolute intraday returns normalised by absolute intraday returns
@@ -163,10 +165,12 @@ returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeason
 plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
+# savefig("Plots/JSEReturnSeasonality.svg")
 # A2X
 plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Absolute Returns}")
+# savefig("Plots/A2XReturnSeasonality.svg")
 
 #---------------------------------------------------------------------------
 # 3: Average spread normalised by the average daily spread
@@ -255,11 +259,12 @@ end
 JSESpreadSeasonality = AveSpread(spreadJSE, 10); A2XSpreadSeasonality = AveSpread(spreadA2X, 10)
 spreadSeasonality = load("Computed Data/SpreadSeasonality.jld"); JSESpreadSeasonality = spreadSeasonality["JSESpreadSeasonality"]; A2XSpreadSeasonality = spreadSeasonality["A2XSpreadSeasonality"] # save("SpreadSeasonality.jld", "JSESpreadSeasonality", JSESpreadSeasonality, "A2XSpreadSeasonality", A2XSpreadSeasonality)
 # JSE
-plot(JSESpreadSeasonality[1], JSESpreadSeasonality[2], seriestype = :bar, label = L"\textrm{JSE}", dpi = 300, legend = :topright, fillcolor = :red)
+plot(JSESpreadSeasonality[1], JSESpreadSeasonality[2], seriestype = :bar, label = "", dpi = 300, legend = :topright, fillcolor = :red)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Spread}")
+# savefig("Plots/JSESpreadSeasonality.svg")
 # A2X
-plot(A2XSpreadSeasonality[1], A2XSpreadSeasonality[2], seriestype = :bar, label = L"\textrm{A2X}", fillcolor = :blue, dpi = 300, legend = :topright)
+plot(A2XSpreadSeasonality[1], A2XSpreadSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright)
 xlabel!(L"\textrm{Time of day}")
 ylabel!(L"\textrm{Normalised Spread}")
-# savefig("Assignment2/Plots/SBK_Spread.svg")
+# savefig("Plots/A2XSpreadSeasonality.svg")

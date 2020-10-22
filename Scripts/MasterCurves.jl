@@ -371,21 +371,19 @@ function PlotCompare(p, side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJS
         plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Buyer}", seriestype = :scatter)
         plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (collapsedA2XΔp .- A2Xerlow, A2Xerup .- collapsedA2XΔp), fillalpha=.3, scale = :log10, color = :blue, label = "")
         plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Buyer}", seriestype = :scatter)
-        xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
-        ylabel!(L"\Delta p^* C^{\gamma}")
+        xlabel!(L"\overline{\omega^* / C^{\delta}}")
+        ylabel!(p, L"\overline{\Delta p^* C^{\gamma}} \kappa")
     elseif side == :sell
         plot!(p, collapsedJSEω, collapsedJSEΔp, ribbon = (max.(0, collapsedJSEΔp .- JSEerlow), max.(0, JSEerup .- collapsedJSEΔp)), fillalpha=.3, scale = :log10, color = :red, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
         plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Seller}", seriestype = :scatter, markershape = :utriangle)
         plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (max.(0, collapsedA2XΔp .- A2Xerlow), max.(0, A2Xerup .- collapsedA2XΔp)), fillalpha=.3, color = :blue, label = "", scale = :log10) #
         plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Seller}", seriestype = :scatter, markershape = :utriangle)
-        xlabel!(p, L"\textrm{Seller-Initiated: } \omega^* / C^{\delta}")
-        ylabel!(p, L"\Delta p^* C^{\gamma}")
+        xlabel!(p, L"\overline{\omega^* / C^{\delta}}")
+        ylabel!(p, L"\overline{\Delta p^* C^{\gamma}} \kappa")
     end
 end
 
-p = plot()
+p = plot(dpi = 300)
 PlotCompare(p, :buy, JSEBuyParam, A2XBuyParam)
-# savefig("Plots/MasterBuy.svg")
-
 PlotCompare(p, :sell, JSESellParam, A2XSellParam)
-# savefig("Plots/MasterSell.svg")
+# savefig("Plots/MasterCurves.svg")

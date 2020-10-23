@@ -128,25 +128,25 @@ end
 
 
 # Tick-by-tick return distributions
-NPNJSE = CSV.read("Real Data/JSE/JSECleanedTAQ" * "NPN" * ".csv")
-NPNA2X = CSV.read("Real Data/A2X/A2X_Cleaned_" * "NPN" * ".csv")[:, 2:end]
+NPNJSE = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQ" * "NPN" * ".csv")
+NPNA2X = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_" * "NPN" * ".csv")[:, 2:end]
 DataFrames.rename!(NPNA2X, (:Date => :TimeStamp))
 NPNJSEMicroReturns = getReturns(NPNJSE, :MicroPrice); NPNA2XMicroReturns = getReturns(NPNA2X, :MicroPrice)
 
 rightTailQQ = plot(dpi = 300)
 PLqqplot_Tail(rightTailQQ, NPNJSEMicroReturns, "Right", "JSE")
 PLqqplot_Tail(rightTailQQ, NPNA2XMicroReturns, "Right", "A2X")
-savefig(rightTailQQ, string("Plots/RightTailTickReturns.svg"))
+savefig(rightTailQQ, string("Plots/RightTailTickReturns.png"))
 leftTailQQ = plot(dpi = 300)
 PLqqplot_Tail(leftTailQQ, NPNJSEMicroReturns, "Left", "JSE")
 PLqqplot_Tail(leftTailQQ, NPNA2XMicroReturns, "Left", "A2X")
-savefig(leftTailQQ, string("Plots/LeftTailTickReturns.svg"))
+savefig(leftTailQQ, string("Plots/LeftTailTickReturns.png"))
 # Joint density plot of returns
-densityReturns = density(NPNJSEMicroReturns, label = "JSE", color = :red, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :bottomright)
+densityReturns = density(NPNJSEMicroReturns, label = "JSE", color = :red, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}", legend = :bottomright, dpi = 300)
 density!(densityReturns, NPNA2XMicroReturns, label = "A2X", color = :blue, xlabel = L"\textrm{Price fluctuations}", ylabel = L"\textrm{Density}")
 qqplot!(densityReturns, Normal, NPNJSEMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{JSE - Normal QQ-plot}", markersize = 3, markercolor = :red, markerstrokecolor = :red, linecolor = :black, inset = (1, bbox(0.62, 0.1, 0.33, 0.33, :top)), subplot = 2, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
 qqplot!(densityReturns, Normal, NPNA2XMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{A2X - Normal QQ-plot}", markersize = 3, markercolor = :blue, markerstrokecolor = :blue, linecolor = :black, inset = (1, bbox(0.1, 0.1, 0.33, 0.33, :top)), subplot = 3, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
-savefig(densityReturns, string("Plots/TickReturnsDistribution.pdf"))
+savefig(densityReturns, string("Plots/TickReturnsDistribution.png"))
 
 
 

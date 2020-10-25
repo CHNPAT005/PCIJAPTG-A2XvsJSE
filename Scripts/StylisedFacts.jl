@@ -92,7 +92,7 @@ function PLqqplot_Tail(p, obs, side, market) # Function to plot the QQ plot usin
     end
 
     # Plot the QQ plot
-    plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 7, guidefontsize = 7, tickfont = 5, linecolor = :black, markercolor = col, markerstrokecolor = col)
+    plot!(p, [quantiles⁰ quantiles⁰], [obs quantiles⁰], seriestype = [:scatter :line], inset = pos, subplot = sub, legend = :none, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{%$market - Power Law QQ-plot}", titlefontsize = 7, guidefontsize = 7, tickfont = 5, linecolor = :black, markercolor = col, markerstrokecolor = col, scale = :log10)
 end
 
 for interval in [1, 10, 20, 30]

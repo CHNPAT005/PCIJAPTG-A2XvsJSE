@@ -212,7 +212,7 @@ function PlotMaster(param::Vector, side::Symbol; dataJSE = JSE_PriceImpact, JSEt
     end
     # Plot the values
     plot(ImpactJSE[JSEticker[1]][1], ImpactJSE[JSEticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300,
-    label = "JSE", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), color = :red)
+    label = "JSE", legend = :outertopright, legendtitle = L"\textrm{Exchange}", size = (700,400), color = :red)
     for i in 2:length(JSEticker)
         plot!(ImpactJSE[JSEticker[i]][1], ImpactJSE[JSEticker[i]][2], marker = (4, 0.8), scale = :log10, label = "", color = :red)
     end

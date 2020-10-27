@@ -16,6 +16,24 @@ JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "S
 # A2X tickers
 A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
+## Supporting functions to compute the direct costs
+# Note that the Ceiling value is in terms of Rands
+# Note that JSE values are reported in ZAC
+# Note that A2X values are reported in ZAC * 10^5
+function JSEDirectCost(TransactionValue; bpsTrade = 0.48, TradeMax = 420.4, bpsSettle = 0.36, SettleMax = 180)
+    # Transaction fee
+    TradeFee = min(TransactionValue * bpsTrade / 100, TradeMax*10^2)
+    SettleFee = min(TransactionValue * bpsSettle / 100, SettleMax*10^2)
+    return TradeFee + SettleFee
+end
+
+function A2XDirectCost(TransactionValue; bpsTrade = 0.4, TradeMax = 355, bpsSettle = 0.29, SettleMax = 154)
+    # Transaction fee
+    TradeFee = min(TransactionValue * bpsTrade / 100, TradeMax*10^7)
+    SettleFee = min(TransactionValue * bpsSettle / 100, SettleMax*10^7)
+    return TradeFee + SettleFee
+end
+
 ## Data extraction for price impact
 #---------------------------------------------------------------------------
 ## Function to extract relavent information to create price impact for JSE dataset
@@ -49,7 +67,7 @@ function getPriceImpactInfoJSE(data::DataFrame, side::Symbol)
     sumTⱼ = sum(Tⱼ)
     AVD = mean(Valueofday)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(Impact = Float64[], NormalisedVolume = Float64[], Volume = Float64[])
+    master_df = DataFrame(Impact = Float64[], NormalisedVolume = Float64[], Volume = Float64[], Cost = Float64[], DirectCost = Float64[], Spread = Float64[])
     # Loop through each day and extract useful data
     for i in 1:N
         # Create extract data from each day
@@ -78,15 +96,26 @@ function getPriceImpactInfoJSE(data::DataFrame, side::Symbol)
         # Loop through the trades for each day
         for j in 1:length(inds)
             # Compute the relavent information
-            Δp = log(tempdata[inds[j]+1, 10]) - log(tempdata[inds[j]-1, 10])
+            MPbefore = tempdata[inds[j]-1, 10]; MPafter = tempdata[inds[j]+1, 10]
+            Δp = log(MPafter) - log(MPbefore)
+            # Δp = log(tempdata[inds[j]+1, 10]) - log(tempdata[inds[j]-1, 10])
             vol = tempdata[inds[j], 8]
             normvol = (vol / Volonday[i]) * (sumTⱼ / N)
+            TradePrice = tempdata[inds[j], 7]
+            DirectCost = JSEDirectCost(TradePrice * vol) / vol
+            s = abs(TradePrice - MPbefore)
             # Push to master_df; add correct sign to price change
             if side == :buy
-                temp = (Δp, normvol, vol)
+                Δc = log(MPafter + DirectCost + s) - log(MPbefore)
+                Δd = log(MPbefore + DirectCost) - log(MPbefore)
+                Δs = log(MPbefore + s) - log(MPbefore)
+                temp = (Δp, normvol, vol, Δc, Δd, Δs)
                 push!(master_df, temp)
             elseif side == :sell
-                temp = (-Δp, normvol, vol)
+                Δc = log(MPafter - DirectCost - s) - log(MPbefore)
+                Δd = log(MPbefore + DirectCost) - log(MPbefore)
+                Δs = log(MPbefore + s) - log(MPbefore)
+                temp = (-Δp, normvol, vol, -Δc, Δd, Δs)
                 push!(master_df, temp)
             end
         end
@@ -125,7 +154,7 @@ function getPriceImpactInfoA2X(data::DataFrame, side::Symbol)
     sumTⱼ = sum(Tⱼ)
     ADV = mean(Valueofday)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(Impact = Float64[], NormalisedVolume = Float64[], Volume = Float64[])
+    master_df = DataFrame(Impact = Float64[], NormalisedVolume = Float64[], Volume = Float64[], Cost = Float64[], DirectCost = Float64[], Spread = Float64[])
     # Loop through each day and extract useful data
     for i in 1:N
         # Create extract data from each day
@@ -149,16 +178,26 @@ function getPriceImpactInfoA2X(data::DataFrame, side::Symbol)
         # Loop through the trades for each day
         for j in 1:length(inds)
             # Compute the relavent information
-            # Δp = log(tempdata[(inds[j]+1):end, 5][findfirst(!isnan, tempdata[(inds[j]+1):end, 5])]) - log(tempdata[1:(inds[j]-1), 5][findlast(!isnan, tempdata[1:(inds[j]-1), 5])])
-            Δp = log(tempdata[inds[j]+1, 5]) - log(tempdata[inds[j]-1, 5])
+            MPbefore = tempdata[inds[j]-1, 5]; MPafter = tempdata[inds[j]+1, 5]
+            Δp = log(MPafter) - log(MPbefore)
+            # Δp = log(tempdata[inds[j]+1, 5]) - log(tempdata[inds[j]-1, 5])
             vol = tempdata[inds[j], 4]
             normvol = (vol / Volonday[i]) * (sumTⱼ / N)
+            TradePrice = tempdata[inds[j], 3]
+            DirectCost = A2XDirectCost(TradePrice * vol) / vol
+            s = abs(TradePrice - MPbefore)
             # Push to master_df; add correct sign to price change
             if side == :buy
-                temp = (Δp, normvol, vol)
+                Δc = log(MPafter + DirectCost + s) - log(MPbefore)
+                Δd = log(MPbefore + DirectCost) - log(MPbefore)
+                Δs = log(MPbefore + s) - log(MPbefore)
+                temp = (Δp, normvol, vol, Δc, Δd, Δs)
                 push!(master_df, temp)
             elseif side == :sell
-                temp = (-Δp, normvol, vol)
+                Δc = log(MPafter - DirectCost - s) - log(MPbefore)
+                Δd = log(MPbefore + DirectCost) - log(MPbefore)
+                Δs = log(MPbefore + s) - log(MPbefore)
+                temp = (-Δp, normvol, vol, -Δc, Δd, Δs)
                 push!(master_df, temp)
             end
         end

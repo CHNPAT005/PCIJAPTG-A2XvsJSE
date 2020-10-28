@@ -82,7 +82,9 @@ function PlotCosts(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, JSEtic
         elseif type == :DirectCost
             ylabel!(L"\Delta \textrm{DC}^*")
         elseif type == :Spread
-            ylabel!(L"\Delta \textrm{Spread}^*")
+            ylabel!(L"\Delta s^*")
+        elseif type == :Impact
+            ylabel!(L"\Delta p^*")
         end
     elseif side == :sell
         xlabel!(L"\textrm{Seller-Initiated: } \omega^*")
@@ -91,7 +93,9 @@ function PlotCosts(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, JSEtic
         elseif type == :DirectCost
             ylabel!(L"\Delta \textrm{DC}^*")
         elseif type == :Spread
-            ylabel!(L"\Delta \textrm{Spread}^*")
+            ylabel!(L"\Delta s^*")
+        elseif type == :Impact
+            ylabel!(L"\Delta p^*")
         end
     end
 end
@@ -114,3 +118,9 @@ PlotCosts(:Spread, :buy)
 
 PlotCosts(:Spread, :sell)
 # savefig("Plots/SpreadCostSell.svg")
+
+PlotCosts(:Impact, :buy)
+# savefig("Plots/ImpactCostBuy.svg")
+
+PlotCosts(:Impact, :sell)
+# savefig("Plots/ImpactCostSell.svg")

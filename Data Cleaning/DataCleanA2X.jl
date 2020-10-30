@@ -476,3 +476,17 @@ function CleanData() # Function to bring everything together and create
 end
 CleanData()
 #---------------------------------------------------------------------------
+
+### 4. Calculate the frequencies of aggressive trades
+function AggressiveTradeFrequencies(data)
+    buyerData = data[1]; sellerData = data[2]
+    tickers = collect(keys(buyerData))
+    aggressiveTradeFrequency = Vector{Float64}()
+    for ticker in tickers
+        percent = (sum(isnan.(buyerData[ticker].Impact)) + sum(isnan.(sellerData[ticker].Impact))) / (size(buyerData[ticker], 1) + size(sellerData[ticker], 1))
+        push!(aggressiveTradeFrequency, percent)
+    end
+    return aggressiveTradeFrequency
+end
+aggressiveTradeFrequencies = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")["A2X_PriceImpact"] |> AggressiveTradeFrequencies
+#---------------------------------------------------------------------------

@@ -1,16 +1,22 @@
-## Author: Patrick Chang & Ivan Jericevich
-# Script file to visualise the full market depth on A2X
+### Title: Visualise the Full Order-Book
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Visualise the full market depth for A2X
+### Structure:
+# 1. Preliminaries
+# 2. Obtain raw message feed
+# 3. Plot full market depth
+#---------------------------------------------------------------------------
 
-## Preamble
 
+### 1. Preliminaries
 using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates, Plots, Statistics, LaTeXStrings
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
-# Create a dictionary mapping the securityIds to the security names
-clearconsole()
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 SecurityIDtoTickerName = CSV.read("Supporting information/SecurityIDtoTickerName.csv")
 secIDtoTickerName = Dict(SecurityIDtoTickerName[i, 1] => SecurityIDtoTickerName[i, 2] for i in 1:(size(SecurityIDtoTickerName)[1]))
+#---------------------------------------------------------------------------
 
-## Phase 1 - Convert raw data to TAQ data
+
+### 2. Obtain raw message feed
 function getFromString(field::String, message::SubString{String}, delimiter::String) # Function to extract value of a specific field from a message string
     first_ind = findfirst(field*":", message)[end]+1
     last_ind = findfirst(delimiter, message[first_ind:end])[1]-2
@@ -99,27 +105,20 @@ function getTAQ(file::String) # Function to read in a day of data of all assets,
     end
     return taqDict, securityIds, tickerNames
 end
-
-filedir = "Real Data/A2X/Raw/2019-07-15_A_prod_10G_stream.log.bz2"
-
-NPN_CleanedData = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_NPN.csv")
+filedir = "Test Data/A2X/Raw/2019-07-12_A_prod_10G_stream.log.bz2"
+NPN_CleanedData = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_NPN.csv")
 NPN_messageData = getTAQ(filedir)[1]["NPN"]
+#---------------------------------------------------------------------------
 
 
-# Function to plot the Full Market depth for a given ticker
-# Plots the MicroPrice, bid, ask, and trade over a user specified time of day.
-# Requires both raw data and cleaned data.
-# uses the clean data to plot trades and micro-price and raw data to build the
-# order books for plotting.
-function plotFullDepth(MessageData::DataFrame, CleanedData::DataFrame; date = "2019-07-15", start = 9, close = 17, startmin = 0, closemin = 0, pos = :topright)
+### 3. Plot full market depth
+function plotFullDepth(MessageData::DataFrame, CleanedData::DataFrame; date = "2019-07-15", start = 9, close = 17, startmin = 0, closemin = 0, pos = :topright) # Function to plot the Full Market depth for a given ticker. Plots the MicroPrice, bid, ask, and trade over a user specified time of day. Uses the clean data to plot trades and micro-price and raw data to build the order books for plotting
     # Filter out data for the day
     dates = Date.(CleanedData[:,2])
     date = Date(date, "y-m-d")
     # Pull out the data for the day
     inds = findall(x -> x == date, dates)
     CleanedData = CleanedData[inds,:]
-
-
     # Get range of time to investigate
     StartTime = DateTime(Date(CleanedData[:Date][1])) + Hour(start) + Minute(startmin)
     EndTime = DateTime(Date(CleanedData[:Date][1])) + Hour(close) + Minute(closemin)
@@ -127,28 +126,19 @@ function plotFullDepth(MessageData::DataFrame, CleanedData::DataFrame; date = "2
     Inds = findall(x -> StartTime <= x <= EndTime, CleanedData[:Date])
     # Obtain range of data that matters
     CleanedData = CleanedData[Inds,:]
-
-
     # Get average Bid and Ask vol
     bidind = findall(!isnan, CleanedData[:BidVol])
     askind = findall(!isnan, CleanedData[:AskVol])
     tradeind = findall(!isnan, CleanedData[:TradeVol])
-
     # AveBidVol = mean(CleanedData[bidind, :BidVol])
     # AveAskVol = mean(CleanedData[askind, :AskVol])
     AveTradeVol = mean(CleanedData[tradeind, :TradeVol])
     AveBidVol = mean(MessageData[findall(x-> x == "BUY", MessageData[:Side]), :Quantity])
     AveAskVol = mean(MessageData[findall(x-> x == "SELL", MessageData[:Side]), :Quantity])
-
-
-
     # Plot MicroPrice
     p = plot(Time.(CleanedData[:Date]), CleanedData[:MicroPrice] .÷ 10^7, linetype = :steppost, color = :black, label = "Microprice", legend = pos, dpi = 300, linewidth = 0.5, size = (700, 400))
-
     ## Initialise dictionary for all bids and asks
-    Bid_dict = Dict()
-    Ask_dict = Dict()
-
+    Bid_dict = Dict(); Ask_dict = Dict()
     # Run through the TAQ messages to create dataframe of L1 BAT
     @showprogress "Computing..." for i in 1:size(MessageData)[1]
         line = MessageData[i,:]
@@ -288,7 +278,6 @@ function plotFullDepth(MessageData::DataFrame, CleanedData::DataFrame; date = "2
         end
     end
     current()
-
     # Make top-of-book blue and red
     # Bid
     plot!(p, Time.(CleanedData[bidind, :Date]), CleanedData[bidind, :Bid] .÷ 10^7, markersize = 1.5, seriestype = :scatter, color = :blue, markerstrokealpha = 0.1, label = "Bid", markerstrokewidth=0)
@@ -296,18 +285,12 @@ function plotFullDepth(MessageData::DataFrame, CleanedData::DataFrame; date = "2
     plot!(p, Time.(CleanedData[askind, :Date]), CleanedData[askind, :Ask] .÷ 10^7, markersize = 1.5, seriestype = :scatter, color = :red, markerstrokealpha = 0.1, label = "Ask", markerstrokewidth=0)
     # Plot the trades separately
     plot!(p, Time.(CleanedData[tradeind, :Date]), CleanedData[tradeind, :Trade] .÷ 10^7, markersize = 1.5, seriestype = :scatter, color = :green, markerstrokealpha = 0.1, label = "Trade", markerstrokewidth=0)
-
     # Axis information
     f = "\\textrm{"
     xlabel!(p, latexstring("$f$(Date(CleanedData[:Date][1]))}"))
     ylabel!(p, L"\textrm{Price [ZAR]}")
     return p
 end
-
-mydate = "2019-07-15"
-
-NPNFMDafternoon = plotFullDepth(NPN_messageData, NPN_CleanedData; date = mydate, start = 14, close = 14, startmin = 30, closemin = 40, pos = :outertopright)
-# savefig(NPNFMDafternoon, "Plots/NPNFMDafternoon.png")
-
-NPNFMDmorning = plotFullDepth(NPN_messageData, NPN_CleanedData; date = mydate, start = 13, close = 14, startmin = 50, closemin = 0, pos = :outertopright)
-# savefig(NPNFMDmorning, "Plots/NPNFMDmorning.png")
+NPNFMDafternoon = plotFullDepth(NPN_messageData, NPN_CleanedData; date = "2019-07-12", start = 14, close = 14, startmin = 30, closemin = 40, pos = :outertopright); savefig(NPNFMDafternoon, "Figures/NPNFMDafternoon.png")
+NPNFMDmorning = plotFullDepth(NPN_messageData, NPN_CleanedData; date = "2019-07-12", start = 13, close = 14, startmin = 50, closemin = 0, pos = :outertopright); savefig(NPNFMDmorning, "Figures/NPNFMDmorning.png")
+#---------------------------------------------------------------------------

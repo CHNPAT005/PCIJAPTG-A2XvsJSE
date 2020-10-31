@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-<img src="https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE/tree/release/Figures/A2XLogo.png" width="48">
+<img src="Figures/A2XLogo.png" width="48">
 
 ## Authors
 * Ivan Jericevich

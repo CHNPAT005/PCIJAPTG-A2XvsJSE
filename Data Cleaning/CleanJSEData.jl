@@ -1,32 +1,35 @@
-## Author: Patrick Chang & Ivan Jerivich
-# Script file to read in the JSE TAQ data. Extract
-# the useful TAQ information and obtain the mid-price, micro-price,
-# inter-arrivals and trade signs to write into flat files
-
+### Title: Data Cleaning - JSE
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Convert the raw JSE data into a detailed and usable L1LOB format.
+### Structure:
+# 1. Preliminaries
+# 2. Cleaning functions
+# 3. Implement cleaning functions
+### Strategy:
+# Extract data from 2019-01-01 onwards, only pull out data within the continuous trading session, and only keep Automated Trades (AT)
+# Compute and add mid-price, micro-price and inter-arrival information
+# Classify trades according to the Lee-Ready rule
 #---------------------------------------------------------------------------
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
+### 1. Preliminaries
+using CSV, DataFrames, Dates, ProgressMeter
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 #---------------------------------------------------------------------------
 
-## Function to get raw TAQ data into a nice usable format
-# Extract data from 2019-01-01 onwards, only pull out data within
-# the continuous trading session, and only keep Automated Trades (AT).
-function MakeCleanTAQ(data::DataFrame)
+
+### 2. Cleaning Functions
+function MakeCleanTAQ(data::DataFrame) # Convert raw data into usable format
     # Extract the dates
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
     dates_unique = filter(x -> x >= Date("2019-01-01"), dates_unique)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(TimeStamp = DateTime[], EventType = String[],
-    Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[],
-    Trade = Float64[], TradeVol = Float64[])
+    master_df = DataFrame(TimeStamp = DateTime[], EventType = String[], Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[], Trade = Float64[], TradeVol = Float64[])
     # Loop through each day and extract useful data
     @showprogress "Filtering..." for i in 1:length(dates_unique)
-        # Create extract data from each day
+        # Obtain single day
         tempday = dates_unique[i]
         tempdata = data[findall(x -> x == tempday, dates), :]
         # Only keep data within continuous trading
@@ -58,20 +61,14 @@ function MakeCleanTAQ(data::DataFrame)
     end
     return master_df
 end
-
-## Function to get micro-price, mid-price and inter-arrivals
-# from usable TAQ format
-function MakeDetailedTAQ(data::DataFrame)
+function MakeDetailedTAQ(data::DataFrame) # Get micro-price, mid-price and inter-arrivals information
     # Extract the dates
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
     filter!(x-> x >= Date("2019-01-01"), dates_unique)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(TimeStamp = DateTime[], EventType = String[],
-    Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[],
-    Trade = Float64[], TradeVol = Float64[], MicroPrice = Float64[],
-    MidPrice = Float64[], InterArrivals = Float64[])
+    master_df = DataFrame(TimeStamp = DateTime[], EventType = String[], Bid = Float64[], BidVol = Float64[], Ask = Float64[], AskVol = Float64[], Trade = Float64[], TradeVol = Float64[], MicroPrice = Float64[], MidPrice = Float64[], InterArrivals = Float64[])
     # Loop through each day and extract useful data
     @showprogress "Building..." for j in 1:length(dates_unique)
         # Create extract data from each day
@@ -114,7 +111,7 @@ function MakeDetailedTAQ(data::DataFrame)
                 if isnothing(indexof_current_best_ask)
                     # There are no current asks, therefore micro and mid price are NaNs
                     micro_price[i] = NaN
-                    mid_price[i] = NaN   # no current asks in data; for start of dataset
+                    mid_price[i] = NaN   # No current asks in data; for start of dataset
                 else
                     # Get the index of current ask
                     indexof_current_best_ask = indexof_current_best_ask
@@ -126,9 +123,8 @@ function MakeDetailedTAQ(data::DataFrame)
                     mid_price[i] = 0.5*(current_bid + current_ask)
                 end
             else
-                if i>2
-                    # The event is a trade
-                    # Can't use NaN as that means at least one side of order book is empty
+                if i > 2
+                    # The event is a trade. Can't use NaN as that means at least one side of order book is empty
                     micro_price[i] = micro_price[i-1]
                     mid_price[i] = mid_price[i-1]
                 end
@@ -150,9 +146,7 @@ function MakeDetailedTAQ(data::DataFrame)
     end
     return master_df
 end
-
-## Function to classify the trades according to the Lee-Ready rule
-function ClassifyTrades(data::DataFrame)
+function ClassifyTrades(data::DataFrame) # Classify the trades according to the Lee-Ready rule
     # Extract the dates
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
@@ -232,38 +226,16 @@ function ClassifyTrades(data::DataFrame)
     end
     return master_df
 end
+#---------------------------------------------------------------------------
 
-## Function to piece everything together
+
+### 3. Implement cleaning functions
 function GetCleanedData(ticker::String)
-    # Read in data
-    data = CSV.read("Real Data/JSE/Raw/JSERAWTAQ"*ticker*".csv")
-    # Get data into usable format
-    clean = MakeCleanTAQ(data)
-    # Make additional information
-    detail = MakeDetailedTAQ(clean)
-    # Classify trades using Lee-Ready
-    classified = ClassifyTrades(detail)
-    # Write the day as a CSV file
-    CSV.write("Real Data/JSE/Cleaned/JSECleanedTAQ"*ticker*".csv", classified)
+    data = CSV.read("Test Data/JSE/Raw/JSERAWTAQ"*ticker*".csv") # Read in data
+    clean = MakeCleanTAQ(data) # Get data into usable format
+    detail = MakeDetailedTAQ(clean) # Make additional information
+    classified = ClassifyTrades(detail) # Classify trades using Lee-Ready
+    CSV.write("Test Data/JSE/Clean/JSECleanedTAQ"*ticker*".csv", classified) # Write the entire history as a CSV file
 end
-
-# SBK
-GetCleanedData("SBK")
-# NPN
-GetCleanedData("NPN")
-# SLM
-GetCleanedData("SLM")
-# ABG
-GetCleanedData("ABG")
-# AGL
-GetCleanedData("AGL")
-# BTI
-GetCleanedData("BTI")
-# FSR
-GetCleanedData("FSR")
-# NED
-GetCleanedData("NED")
-# SHP
-GetCleanedData("SHP")
-# SOL
-GetCleanedData("SOL")
+GetCleanedData("SBK"); GetCleanedData("NPN"); GetCleanedData("SLM"); GetCleanedData("ABG"); GetCleanedData("AGL"); GetCleanedData("BTI"); GetCleanedData("FSR"); GetCleanedData("NED"); GetCleanedData("SHP"); GetCleanedData("SOL")
+#---------------------------------------------------------------------------

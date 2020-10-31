@@ -14,9 +14,8 @@
 
 
 ### 1. Preliminaries
-using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates, JLD
-# cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE"); clearconsole()
-cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
+using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 # Create a dictionary mapping the securityIds to the security names
 SecurityIDtoTickerName = CSV.read("Supporting information/SecurityIDtoTickerName.csv")
 secIDtoTickerName = Dict(SecurityIDtoTickerName[i, 1] => SecurityIDtoTickerName[i, 2] for i in 1:(size(SecurityIDtoTickerName)[1]))

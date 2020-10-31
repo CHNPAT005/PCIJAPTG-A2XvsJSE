@@ -1,4 +1,4 @@
-# PCIJAPTG-A2XvsJSE
+# ![PCIJAPTG-A2XvsJSE](https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE/tree/release/Figures/A2X Logo.png)
 
 ## Authors
 * Ivan Jericevich
@@ -29,5 +29,4 @@ This repository details the implementation of an exploratory data analysis of th
 * A text editor or IDE such as [Atom](https://flight-manual.atom.io/getting-started/sections/installing-atom/), [VS Code](https://code.visualstudio.com/download) or [Jupyter](https://jupyter.org/install)
 * The test data sets accompanied herewith which can also be found at <http://linktozivahub/datasets/>
 
-## Test Data
-### Usage
+## Usage

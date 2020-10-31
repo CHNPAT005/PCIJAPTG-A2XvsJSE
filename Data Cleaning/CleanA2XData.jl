@@ -15,7 +15,8 @@
 
 ### 1. Preliminaries
 using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates, JLD
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE"); clearconsole()
+# cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE"); clearconsole()
+cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
 # Create a dictionary mapping the securityIds to the security names
 SecurityIDtoTickerName = CSV.read("Supporting information/SecurityIDtoTickerName.csv")
 secIDtoTickerName = Dict(SecurityIDtoTickerName[i, 1] => SecurityIDtoTickerName[i, 2] for i in 1:(size(SecurityIDtoTickerName)[1]))
@@ -429,7 +430,7 @@ function GetDetailedL1BAT(ticker, FullData) # Function to streamline the process
         master_df = [master_df; ticker_dict[Dates.format(dates_unique[i], "yyyy-mm-dd")]]
     end
     # Write the entire history as a CSV file
-    CSV.write("Real Data/A2X/Cleaned/A2X_Cleaned_"*ticker*".csv", master_df)
+    CSV.write("Test Data/A2X/Cleaned/A2X_Cleaned_"*ticker*".csv", master_df)
 end
 #---------------------------------------------------------------------------
 
@@ -437,8 +438,8 @@ end
 ### 3. Implement cleaning functions
 function CleanData() # Function to bring everything together and create
     # Phase 1:
-    files = readdir("Real Data/A2X/Raw/") # Find all the files
-    filename = "Real Data/A2X/Raw/".*files
+    files = readdir("Test Data/A2X/Raw/") # Find all the files
+    filename = "Test Data/A2X/Raw/".*files[2:end]
     Full_data = combineTAQ(filename) # Get data into usable format
     # Phase 2 & 3:
     for i in keys(Full_data) # Loop through each ticker:

@@ -430,7 +430,7 @@ function GetDetailedL1BAT(ticker, FullData) # Function to streamline the process
         master_df = [master_df; ticker_dict[Dates.format(dates_unique[i], "yyyy-mm-dd")]]
     end
     # Write the entire history as a CSV file
-    CSV.write("Test Data/A2X/Cleaned/A2X_Cleaned_"*ticker*".csv", master_df)
+    CSV.write("Test Data/A2X/Clean/A2X_Cleaned_"*ticker*".csv", master_df)
 end
 #---------------------------------------------------------------------------
 

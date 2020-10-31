@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-![](https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE/tree/release/Figures/A2XLogo.png)
+![fyhjy](https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE/tree/release/Figures/A2XLogo.png)
 
 ## Authors
 * Ivan Jericevich

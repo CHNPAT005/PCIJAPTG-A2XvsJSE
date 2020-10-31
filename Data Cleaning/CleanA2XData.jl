@@ -7,9 +7,9 @@
 # 3. Implement cleaning functions
 # 4. Calculate the frequencies of aggressive trades
 ### Strategy:
-# Phase 1: Convert the raw message strings into a usable DataFrame format.
-# Phase 2: Convert the cleaned messages into a usable L1 BAT order book with separate columns for each item.
-# Phase 3: Create a more detailed dataframe with the addition of mid-price micro-price and inter-arrivals.
+# Phase 1: Convert the raw message strings into a usable DataFrame format
+# Phase 2: Convert the cleaned messages into a usable L1 BAT order book with separate columns for each item
+# Phase 3: Create a more detailed dataframe with the addition of mid-price micro-price and inter-arrivals
 #---------------------------------------------------------------------------
 
 

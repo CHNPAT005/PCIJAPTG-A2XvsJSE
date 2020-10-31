@@ -1,44 +1,23 @@
-## Author: Patrick Chang
-# Script file to investigate the order-book seasonality of JSE
-# Here we split the data into two sections based on daylight savings
-# which occured on 31 March 2019
-# We are looking at:
-#   1: Aggregate volume across the day normalised by daily volume
-#   2: Average absolute intraday returns normalised by absolute intraday returns
-#   3: Average spread normalised by the average daily spread
+### Title: Seasonality
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Investigate the intraday order-book seasonality of JSE and A2X
+### Structure:
+# 1. Preliminaries
+# 2. Aggregate volume across the day normalised by daily volume
+# 3. Average absolute intraday returns normalised by absolute intraday returns
+# 4. Average spread normalised by the average daily spread
 #---------------------------------------------------------------------------
-## Preamble
-using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots
-using Statistics, LaTeXStrings, TimeSeries
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
-function CombineTransactionBarData(exchange::String, granularity::Int64, tickers::Vector{String})
-    TradesBars = CSV.read(string("Real Data/", exchange, "/Bar/", tickers[1], "TradesBars", granularity, "min.csv"))# |> y -> filter(x -> !isnan(x.N), y)
-    @showprogress "Computing..." for ticker in tickers[2:end]
-        tempBars = CSV.read(string("Real Data/", exchange, "/Bar/", ticker, "TradesBars", granularity, "min.csv"))# |> y -> filter(x -> !isnan(x.N), y)
-        append!(TradesBars, tempBars)
-    end
-    function WeightedAverage(v, n)
-        if sum(.!isnan.(n)) == 0
-            return NaN
-        else
-            indeces = findall(!isnan, n))
-            return sum(v[indeces] .* n[indeces]) / sum(n[indeces])
-        end
-    end
-    #sort!(TradesBars10minBDT, ); sort!(TradesBars10minBDST)
-    gdf = groupby(TradesBars, :TimeStamp)
-    df = combine([:Volume, :N] => (v, n) -> (v = WeightedAverage(v, n)), gdf) # Apply and combine
-    return df
-end
-JSETradesBars10min = CombineTransactionBarData("JSE", 10, JSE_tickers)'; A2XTradesBars10min = CombineTransactionBarData("A2X", 10, A2X_tickers)
+
+### 1. Preliminaries
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 #---------------------------------------------------------------------------
-# 1: Aggregate volume across the day normalised by daily volume
-#---------------------------------------------------------------------------
-## Function to compute the average volume across the day normalised by daily volume
-function AveNormVol(data::DataFrame)
+
+
+### 2. Aggregate volume across the day normalised by daily volume
+    function AveNormVol(data::DataFrame)
     # Extract the dates of the data
     dates = Date.(data[:,1])
     dates_unique = unique(dates)
@@ -66,24 +45,17 @@ function AveNormVol(data::DataFrame)
     times = Time.(data[1:nbins,1])
     return times, AggregatedNormData
 end
-JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min)
-volumeSeasonality = load("Computed Data/VolumeSeasonality.jld"); JSEVolumeSeasonality = volumeSeasonality["JSEVolumeSeasonality"]; A2XVolumeSeasonality = volumeSeasonality["A2XVolumeSeasonality"] # save("VolumeSeasonality.jld", "JSEVolumeSeasonality", JSEAveNormVol, "A2XVolumeSeasonality", A2XAveNormVol)
-# JSE
-plot(JSEVolumeSeasonality[1], JSEVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topleft)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Volume}")
-# savefig("Plots/JSEVolumeSeasonality.svg")
-# A2X
-plot(A2XVolumeSeasonality[1], A2XVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Volume}")
-# savefig("Plots/A2XVolumeSeasonality.svg")
+JSETradesBars10min = CSV.File("Test Data/JSE/Bar/CombinedTransactionBars10min.csv") |> DataFrame!; A2XTradesBars10min = CSV.File("Test Data/A2X/Bar/CombinedTransactionBars10min.csv") |> DataFrame!
+# Compute the volume curve and save data
+JSEAveNormVol = AveNormVol(JSETradesBars10min); A2XAveNormVol = AveNormVol(A2XTradesBars10min); save("Computed Data/VolumeSeasonality.jld", "JSEVolumeSeasonality", JSEAveNormVol, "A2XVolumeSeasonality", A2XAveNormVol)
+# Load the pre-computed data
+volumeSeasonality = load("Computed Data/VolumeSeasonality.jld"); JSEVolumeSeasonality = volumeSeasonality["JSEVolumeSeasonality"]; A2XVolumeSeasonality = volumeSeasonality["A2XVolumeSeasonality"]
+plot(JSEVolumeSeasonality[1], JSEVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topleft, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Volume}"); savefig("Figures/JSEVolumeSeasonality.pdf")
+plot(A2XVolumeSeasonality[1], A2XVolumeSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topleft, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Volume}"); savefig("Figures/A2XVolumeSeasonality.svg")
+#---------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------
-# 2: Average absolute intraday returns normalised by absolute intraday returns
-#---------------------------------------------------------------------------
-## Function to compute the average absolute intraday returns normalised by
-# the average daily absolute intraday returns. We use VWAP prices from each bar.
+
+### 3. Average absolute intraday returns normalised by absolute intraday returns
 function getReturns(data::DataFrame)
     # Create master dataframe to store all useful information
     Master_df = DataFrame(TimeStamp = DateTime[], Return = Float64[])
@@ -144,38 +116,28 @@ function AveAbsRet(data::DataFrame, barsize::Integer)
     return times, AggregatedNormData
 end
 # Read full cleaned data files for each ticker and concactenate spreads calculated tick-by-tick
-JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * JSE_tickers[1] * ".csv")
-A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
+JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * JSE_tickers[1] * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
 DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
 returnJSE = getReturns(JSE); returnA2X = getReturns(A2X)
 for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
-    JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * jseTicker * ".csv")
-    A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
+    JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * jseTicker * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
     # Ensure that the column names and ordering are the same
     DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
     tempJSE = getReturns(JSE); tempA2X = getReturns(A2X)
     # Concactenate tickers
     append!(returnJSE, tempJSE); append!(returnA2X, tempA2X)
 end
-# save("returnJSE.jld", "returnJSE", returnJSE); save("returnA2X.jld", "returnA2X", returnA2X)
-# returnJSE = load("returnJSE.jld")["returnJSE"]; returnA2X = load("returnA2X.jld")["returnA2X"]
+# Compute the return curve and save data
 JSEReturnSeasonality = AveAbsRet(returnJSE, 10); A2XReturnSeasonality = AveAbsRet(returnA2X, 10)
-returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeasonality = returnSeasonality["JSEReturnSeasonality"]; A2XReturnSeasonality = returnSeasonality["A2XReturnSeasonality"] # save("ReturnSeasonality.jld", "JSEReturnSeasonality", JSEReturnSeasonality, "A2XReturnSeasonality", A2XReturnSeasonality)
-# JSEBuy
-plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topright)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Absolute Returns}")
-# savefig("Plots/JSEReturnSeasonality.svg")
-# A2X
-plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Absolute Returns}")
-# savefig("Plots/A2XReturnSeasonality.svg")
+save("Computed Data/ReturnSeasonality.jld", "JSEReturnSeasonality", JSEReturnSeasonality, "A2XReturnSeasonality", A2XReturnSeasonality)
+# Load the pre-computed data
+returnSeasonality = load("Computed Data/ReturnSeasonality.jld"); JSEReturnSeasonality = returnSeasonality["JSEReturnSeasonality"]; A2XReturnSeasonality = returnSeasonality["A2XReturnSeasonality"]
+plot(JSEReturnSeasonality[1], JSEReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :red, dpi = 300, legend = :topright, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Absolute Returns}"); savefig("Figures/JSEReturnSeasonality.pdf")
+plot(A2XReturnSeasonality[1], A2XReturnSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Absolute Returns}"); savefig("Figures/A2XReturnSeasonality.pdf")
+#---------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------
-# 3: Average spread normalised by the average daily spread
-#---------------------------------------------------------------------------
-## Function to get the spread data
+
+### 4. Average spread normalised by the average daily spread
 function getSpread(data::DataFrame)
     # Initialise Master dataframe to store the timestamp + spread
     Master_df = DataFrame(TimeStamp = DateTime[], Spread = Float64[])
@@ -202,7 +164,6 @@ function getSpread(data::DataFrame)
     end
     return Master_df
 end
-## Function to compute the average spread normalised by the average daily spread
 function AveSpread(data::DataFrame, barsize::Integer)
     # Extract the dates of the data
     dates = Date.(data[:,1])
@@ -241,30 +202,22 @@ function AveSpread(data::DataFrame, barsize::Integer)
     return times, AggregatedNormData
 end
 # Read full cleaned data files for each ticker and concactenate spreads calculated tick-by-tick
-JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * JSE_tickers[1] * ".csv")
-A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
+JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * JSE_tickers[1] * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
 DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
 spreadJSE = getSpread(JSE); spreadA2X = getSpread(A2X)
 for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
-    JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * jseTicker * ".csv")
-    A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
+    JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * jseTicker * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
     # Ensure that the column names and ordering are the same
     DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
     tempJSE = getSpread(JSE); tempA2X = getSpread(A2X)
     # Concactenate tickers
     append!(spreadJSE, tempJSE); append!(spreadA2X, tempA2X)
 end
-# save("spreadJSE.jld", "spreadJSE", spreadJSE); save("spreadA2X.jld", "spreadA2X", spreadA2X)
-# spreadJSE = load("spreadJSE.jld")["spreadJSE"]; spreadA2X = load("spreadA2X.jld")["spreadA2X"]
+# Compute the return curve and save data
 JSESpreadSeasonality = AveSpread(spreadJSE, 10); A2XSpreadSeasonality = AveSpread(spreadA2X, 10)
-spreadSeasonality = load("Computed Data/SpreadSeasonality.jld"); JSESpreadSeasonality = spreadSeasonality["JSESpreadSeasonality"]; A2XSpreadSeasonality = spreadSeasonality["A2XSpreadSeasonality"] # save("SpreadSeasonality.jld", "JSESpreadSeasonality", JSESpreadSeasonality, "A2XSpreadSeasonality", A2XSpreadSeasonality)
-# JSE
-plot(JSESpreadSeasonality[1], JSESpreadSeasonality[2], seriestype = :bar, label = "", dpi = 300, legend = :topright, fillcolor = :red)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Spread}")
-# savefig("Plots/JSESpreadSeasonality.svg")
-# A2X
-plot(A2XSpreadSeasonality[1], A2XSpreadSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright)
-xlabel!(L"\textrm{Time of day}")
-ylabel!(L"\textrm{Normalised Spread}")
-# savefig("Plots/A2XSpreadSeasonality.svg")
+save("Computed Data/SpreadSeasonality.jld", "JSESpreadSeasonality", JSESpreadSeasonality, "A2XSpreadSeasonality", A2XSpreadSeasonality)
+# Load the pre-computed data
+spreadSeasonality = load("Computed Data/SpreadSeasonality.jld"); JSESpreadSeasonality = spreadSeasonality["JSESpreadSeasonality"]; A2XSpreadSeasonality = spreadSeasonality["A2XSpreadSeasonality"]
+plot(JSESpreadSeasonality[1], JSESpreadSeasonality[2], seriestype = :bar, label = "", dpi = 300, legend = :topright, fillcolor = :red, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Spread}"); savefig("Figures/JSESpreadSeasonality.svg")
+plot(A2XSpreadSeasonality[1], A2XSpreadSeasonality[2], seriestype = :bar, label = "", fillcolor = :blue, dpi = 300, legend = :topright, xlabel = L"\textrm{Time of day}", ylabel = L"\textrm{Normalised Spread}"); savefig("Figures/A2XSpreadSeasonality.svg")
+#---------------------------------------------------------------------------

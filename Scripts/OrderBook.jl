@@ -1,24 +1,22 @@
-## Author: Patrick Chang and Ivan Jerivich
-# Script file to investigate:
-# 1) Order flow auto-correlation on A2X and JSE
-#       Note that the order-flow uses the Lee-Ready classification
-# 2) Micro-price return auto-correlation on A2X and JSE
-#       Note that we compute returns as price fluctuations
-#       Also we remove overnight returns
-
-## Preamble
-
-using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings, Pipe, StatsBase, Distributions
-
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
-
-A2X = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_NPN.csv")
-JSE = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQNPN.csv")
-
-# Component 1. Order-flow auto-correlation.
+### Title: Order-book properties
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Investigate order flow auto-correlation and micro-price return auto-correlation (removing overnight returns)
+### Structure:
+# 1. Preliminaries
+# 2. Order-flow auto-correlation
+# 3. Micro-price return auto-correlation
 #---------------------------------------------------------------------------
-# Function to obtain the Lee-Ready classification for A2X
-function getA2XTradeSigns(data::DataFrame)
+
+
+### 1. Preliminaries
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings, Pipe, StatsBase, Distributions
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_NPN.csv"); JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQNPN.csv")
+#---------------------------------------------------------------------------
+
+
+### 2. Order-flow auto-correlation
+function getA2XTradeSigns(data::DataFrame) # Obtain the Lee-Ready classification for A2X
     # Initialise inferred classification
     inferredclassification = String[]
     # Split the data into individual days
@@ -81,19 +79,12 @@ function getA2XTradeSigns(data::DataFrame)
     end
     return inferredclassification
 end
-
-# Function to obtain the Lee-Ready classification for JSE
-# (already included in cleaned data just need to extract it)
-function getJSETradeSigns(data::DataFrame)
+function getJSETradeSigns(data::DataFrame) # Obtain the Lee-Ready classification for JSE
     tradeinds = findall(x -> x == "TRADE", data[:,2])
     inferredclassification = data[tradeinds,12]
     return inferredclassification
 end
-
-# Function to take in vector of strings with trade classification as buyer- or seller-initiated
-# and converting the strings to +1 and -1.
-# Note that BuyerInitiated = +1, SellerInitiated = -1
-function ConvertTradeSigns(data::Vector)
+function ConvertTradeSigns(data::Vector) # Take in vector of strings with trade classification as buyer- or seller-initiated and convert the strings to +1 and -1.
     # Initialise vector
     orderflow = Float64[]
     for i in 1:length(data)
@@ -109,42 +100,22 @@ function ConvertTradeSigns(data::Vector)
     end
     return orderflow
 end
-
-## Compute the Order Flow
-
 A2XOrderFlow = @pipe A2X |> getA2XTradeSigns |> ConvertTradeSigns
-
 JSEOrderFlow = @pipe JSE |> getJSETradeSigns |> convert(Vector, _) |> ConvertTradeSigns
-
-## Visualise the Order Flow autocorrelation
 lags = 1000
-
-A2X_OF = plot(1:lags, autocor(A2XOrderFlow, 1:lags),
-seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black)
+A2X_OF = plot(1:lags, autocor(A2XOrderFlow, 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black)
 hline!(A2X_OF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(A2XOrderFlow))], color = :blue)
 hline!(A2X_OF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(A2XOrderFlow))], color = :blue)
-plot!(A2X_OF, 1:lags, autocor(A2XOrderFlow, 1:lags), xscale = :log10,
-inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "",
-xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black)
-# savefig(A2X_OF, "Plots/A2X_OF.svg")
-
-JSE_OF = plot(1:lags, autocor(JSEOrderFlow, 1:lags),
-seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black)
+plot!(A2X_OF, 1:lags, autocor(A2XOrderFlow, 1:lags), xscale = :log10,; inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "", xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black); savefig(A2X_OF, "Figures/A2X_OF.pdf")
+JSE_OF = plot(1:lags, autocor(JSEOrderFlow, 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black)
 hline!(JSE_OF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
 hline!(JSE_OF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
-plot!(JSE_OF, 1:lags, autocor(JSEOrderFlow, 1:lags), xscale = :log10,
-inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "",
-xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black)
-# savefig(JSE_OF, "Plots/JSE_OF.svg")
-
-# Component 2. Micro-price return autocorrelation
+plot!(JSE_OF, 1:lags, autocor(JSEOrderFlow, 1:lags), xscale = :log10, inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "", xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black); savefig(JSE_OF, "Figures/JSE_OF.pdf")
 #---------------------------------------------------------------------------
-# Note that here the returns are computed as the price fluctuations
-# i.e. r(t_{k}) = log(p(t_{k+1})) - log(p(t_{k})).
-# Also note that overnight returns are removed
 
-# Function to extract the micro-price returns from A2X
-function getA2XReturns(data::DataFrame)
+
+### 3. Micro-price return auto-correlation
+function getA2XReturns(data::DataFrame) # Extract the micro-price returns from A2X
     # Initialise returns
     returns = String[]
     # Split the data into individual days
@@ -162,9 +133,7 @@ function getA2XReturns(data::DataFrame)
     end
     return returns
 end
-
-# Function to extract the micro-price returns from JSE
-function getJSEReturns(data::DataFrame)
+function getJSEReturns(data::DataFrame) # Extract the micro-price returns from JSE
     # Initialise returns
     returns = String[]
     # Split the data into individual days
@@ -182,24 +151,12 @@ function getJSEReturns(data::DataFrame)
     end
     return returns
 end
-
-## Compute the micro-price returns
-
-A2XRets = getA2XReturns(A2X)
-
-JSERets = getJSEReturns(JSE)
-
-## Visualise the micro-price return autocorrelation
-
+A2XRets = getA2XReturns(A2X); JSERets = getJSEReturns(JSE) # Compute the micro-price returns
 lags = 100
-A2X_Rets_ACF = plot(1:lags, autocor(convert.(Float64, A2XRets), 1:lags),
-seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
+A2X_Rets_ACF = plot(1:lags, autocor(convert.(Float64, A2XRets), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
 hline!(A2X_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(A2XRets))], color = :blue, label = "")
-hline!(A2X_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(A2XRets))], color = :blue, label = "")
-# savefig(A2X_Rets_ACF, "Plots/A2X_Rets_ACF.svg")
-
-JSE_Rets_ACF = plot(1:lags, autocor(convert.(Float64, JSERets), 1:lags),
-seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
+hline!(A2X_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(A2XRets))], color = :blue, label = ""); savefig(A2X_Rets_ACF, "Figures/A2X_Rets_ACF.pdf")
+JSE_Rets_ACF = plot(1:lags, autocor(convert.(Float64, JSERets), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
 hline!(JSE_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSERets))], color = :red, label = "")
-hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSERets))], color = :red, label = "")
-# savefig(JSE_Rets_ACF, "Plots/JSE_Rets_ACF.svg")
+hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSERets))], color = :red, label = ""); savefig(JSE_Rets_ACF, "Figures/JSE_Rets_ACF.pdf")
+#---------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 # 1. Preliminaries
 # 2. Cleaning functions
 # 3. Implement cleaning functions
+# 4. Calculate the frequencies of aggressive trades
 ### Strategy:
 # Phase 1: Convert the raw message strings into a usable DataFrame format.
 # Phase 2: Convert the cleaned messages into a usable L1 BAT order book with separate columns for each item.
@@ -13,10 +14,9 @@
 
 
 ### 1. Preliminaries
-using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates# JLD, , , DataTables
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
+using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates, JLD
+cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE"); clearconsole()
 # Create a dictionary mapping the securityIds to the security names
-clearconsole()
 SecurityIDtoTickerName = CSV.read("Supporting information/SecurityIDtoTickerName.csv")
 secIDtoTickerName = Dict(SecurityIDtoTickerName[i, 1] => SecurityIDtoTickerName[i, 2] for i in 1:(size(SecurityIDtoTickerName)[1]))
 #---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ function makeDataStruct(message::SubString{String}, type::Int) # Function to cre
         timestamp = parse(Float64, getFromString("timestamp", message, "}"))
         date = Unix2DateTime(timestamp)
         return (securityId, timestamp, date, orderId, "AT", price, quantity, "", tradeRef, tradeType)
-    else # type 6 message
+    else # Type 6 message
         securityId = getFromString("securityId", message, ",")
         quantity = parse(Float64, getFromString("quantity", message, ","))
         price = parse(Float64, getFromString("price", message, ","))
@@ -476,6 +476,7 @@ function CleanData() # Function to bring everything together and create
 end
 CleanData()
 #---------------------------------------------------------------------------
+
 
 ### 4. Calculate the frequencies of aggressive trades
 function AggressiveTradeFrequencies(data)

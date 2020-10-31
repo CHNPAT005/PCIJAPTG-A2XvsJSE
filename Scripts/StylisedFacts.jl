@@ -14,8 +14,7 @@
 
 ### 1. Preliminaries
 using CSV, DataFrames, Dates, ProgressMeter, Plots, StatsPlots, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
-# cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
-cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 #---------------------------------------------------------------------------
 
 

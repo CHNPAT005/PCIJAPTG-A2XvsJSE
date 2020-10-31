@@ -10,7 +10,7 @@
 
 
 ### 1. Preliminaries
-using CSV, DataFrames, JLD, Dates, ProgressMeter # , Plots, LaTeXStrings, TimeSeries, Distributions, StatsBase
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Statistics
 # cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]

@@ -16,9 +16,7 @@
 
 ### 1. Preliminaries
 using CSV, DataFrames, Dates, ProgressMeter, Plots, LaTeXStrings, TimeSeries
-#cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
-
-cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 NPNJSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQNPN.csv"); NPNA2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_NPN.csv")[:, 2:end]
 DataFrames.rename!(NPNA2X, (:Date => :TimeStamp)); select!(NPNJSE, names(NPNA2X))
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
@@ -157,7 +155,7 @@ end
 
 
 ### 4. Generate candlestick plots
-function candlestick(data::DataFrame, date::String, interval::Int)
+function Candlestick(data::DataFrame, date::String, interval::Int)
     # Get indicies for the date to plot
     inds = findall(x->x==Date(date), Date.(data[:,1]))
     # Filter out data for correct day
@@ -169,19 +167,19 @@ function candlestick(data::DataFrame, date::String, interval::Int)
     # Plot the data
     xtick = interval == 1 ? 10 : 1
     p = plot(ta, seriestype = :candlestick, xrotation = 60, color = [:blue,:red], xticks = xtick, foreground_color_grid = :white, xtickfont = 5, dpi = 300)
-    xlabel!(p, L"\textrm{2019-07-15}")
+    xlabel!(p, L"\textrm{2019-07-12}")
     ylabel!(p, L"\textrm{Price [ZAR]}")
     return p
 end
 for interval in [1, 10, 20]
     # JSE
     NPNJSEMicroBars = CSV.read(string("Test Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
-    candlestickJSE = candlestick(NPNJSEMicroBars, "2019-07-12", interval)
-    savefig(candlestickJSE, string("Figures/NPNJSEMicroPriceBars", interval, "min.svg"))
+    candlestickJSE = Candlestick(NPNJSEMicroBars, "2019-07-12", interval)
+    savefig(candlestickJSE, string("Figures/NPNJSEMicroPriceBars", interval, "min.pdf"))
     # A2X
     NPNA2XMicroBars = CSV.read(string("Test Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
     NPNA2XMicroBars[:,2:5] = NPNA2XMicroBars[:,2:5] ./ 10^5
-    candlestickA2X = candlestick(NPNA2XMicroBars, "2019-07-12", interval)
-    savefig(candlestickA2X, string("Figures/NPNA2XMicroPriceBars", interval, "min.svg"))
+    candlestickA2X = Candlestick(NPNA2XMicroBars, "2019-07-12", interval)
+    savefig(candlestickA2X, string("Figures/NPNA2XMicroPriceBars", interval, "min.pdf"))
 end
 #---------------------------------------------------------------------------

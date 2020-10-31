@@ -3,8 +3,9 @@
 ### Function: Compute the micro-price bar data for NPN along with candlestick plots as well as the transaction bar data combined for all securities in each exchange
 ### Structure:
 # 1. Preliminaries
-# 2. Construct micro-price bar data
-# 3. Generate candlestick plots
+# 2. Construct transaction bar data combined for all securities to be used for volume seasonality
+# 3. Construct micro-price bar data
+# 4. Generate candlestick plots
 ### Interpreting candlestick plot:
 # Bar coloured in => open > close
 # Bar empty => open < close
@@ -14,7 +15,7 @@
 
 
 ### 1. Preliminaries
-using CSV, DataFrames, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings, TimeSeries
+using CSV, DataFrames, Dates, ProgressMeter, Plots, LaTeXStrings, TimeSeries
 #cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 
 cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE")
@@ -24,30 +25,8 @@ JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "S
 #---------------------------------------------------------------------------
 
 
-function CombineTransactionBarData(exchange::String, granularity::Int64, tickers::Vector{String})
-    TradesBars = CSV.read(string("Real Data/", exchange, "/Bar/", tickers[1], "TradesBars", granularity, "min.csv"))# |> y -> filter(x -> !isnan(x.N), y)
-    @showprogress "Computing..." for ticker in tickers[2:end]
-        tempBars = CSV.read(string("Real Data/", exchange, "/Bar/", ticker, "TradesBars", granularity, "min.csv"))# |> y -> filter(x -> !isnan(x.N), y)
-        append!(TradesBars, tempBars)
-    end
-    function WeightedAverage(v, n)
-        if sum(.!isnan.(n)) == 0
-            return NaN
-        else
-            indeces = findall(!isnan, n))
-            return sum(v[indeces] .* n[indeces]) / sum(n[indeces])
-        end
-    end
-    #sort!(TradesBars10minBDT, ); sort!(TradesBars10minBDST)
-    gdf = groupby(TradesBars, :TimeStamp)
-    df = combine([:Volume, :N] => (v, n) -> (v = WeightedAverage(v, n)), gdf) # Apply and combine
-    return df
-end
-JSETradesBars10min = CombineTransactionBarData("JSE", 10, JSE_tickers)'; A2XTradesBars10min = CombineTransactionBarData("A2X", 10, A2X_tickers)
-
-## Function to create the OHLCV + VWAP bar data using transaction data
-# Note that bar size only takes in minutes as the argument
-function MakeTransactionBars(data::DataFrame, barsize::Integer)
+### 2. Construct transaction bar data combined for all securities
+function MakeTransactionBars(data::DataFrame, barsize::Integer) # Create the OHLCV + VWAP bar data combined for all securities using transaction data
     # Extract TimeStamp and transaction data
     data = data[:,[1;7;8]]
     # Filter out non-trade times
@@ -56,11 +35,9 @@ function MakeTransactionBars(data::DataFrame, barsize::Integer)
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
-    filter!(x-> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
+    #filter!(x -> Date("2019-01-01") <= x <= Date("2019-07-15"), dates_unique)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(TimeStamp = DateTime[],
-    Open = Float64[], High = Float64[], Low = Float64[], Close = Float64[],
-    Volume = Float64[], VWAP = Float64[], N = Float64[])
+    master_df = DataFrame(TimeStamp = DateTime[], Open = Float64[], High = Float64[], Low = Float64[], Close = Float64[], Volume = Float64[], VWAP = Float64[], N = Float64[])
     # Loop through each day and extract useful data
     @showprogress "Computing..." for i in 1:length(dates_unique)
         # Create extract data from each day
@@ -73,8 +50,8 @@ function MakeTransactionBars(data::DataFrame, barsize::Integer)
         bars = collect(start:Minute(barsize):close)
         # Loop through the bars to create the OHLCV + VWAP bars
         for j in 2:length(bars)
-            # filter out data within the bar
-            bardata = tempdata[findall(x-> x>bars[j-1] && x<=bars[j], tempdata[:,1]),:]
+            # Filter out data within the bar
+            bardata = tempdata[findall(x -> x > bars[j-1] && x <= bars[j], tempdata[:,1]), :]
             # Check if bar is empty
             if !isempty(bardata)
                 # Not empty; make OHLCV + VWAP
@@ -97,28 +74,32 @@ function MakeTransactionBars(data::DataFrame, barsize::Integer)
     end
     return master_df
 end
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-for (jseTicker, a2xTicker) in zip(JSE_tickers, A2X_tickers)
-    JSE = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/JSECleanedTAQ" * jseTicker * ".csv")
-    A2X = CSV.read("C:/Users/Ivan/University of Cape Town/Patrick Chang - JSE Raw Data/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
-    DataFrames.rename!(A2X, (:Date => :TimeStamp))
-    select!(JSE, names(A2X))
-    # JSE bar data
-    barDataJSE = MakeTransactionBars(JSE, 10)
-    CSV.write(string("Real Data/JSE/Bar/" * jseTicker * "TradesBars", 10, "min.csv"), barDataJSE)
-    # A2X bar data
-    barDataA2X = MakeTransactionBars(A2X, 10)
-    CSV.write(string("Real Data/A2X/Bar/" * a2xTicker * "TradesBars", 10, "min.csv"), barDataA2X)
+function CombineTransactionBarData(granularity::Int64, JSE_tickers::Vector{String}, A2X_tickers::Vector{String})
+    JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * JSE_tickers[1] * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * A2X_tickers[1] * ".csv")[:, 2:end]
+    DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+    barDataJSE = MakeTransactionBars(JSE, granularity); barDataA2X = MakeTransactionBars(A2X, granularity)
+    @showprogress "Computing..." for (jseTicker, a2xTicker) in zip(JSE_tickers[2:end], A2X_tickers[2:end])
+        JSE = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ" * jseTicker * ".csv"); A2X = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_" * a2xTicker * ".csv")[:, 2:end]
+        DataFrames.rename!(A2X, (:Date => :TimeStamp)); select!(JSE, names(A2X))
+        tempJSE = MakeTransactionBars(JSE, granularity); append!(barDataJSE, tempJSE); tempA2X = MakeTransactionBars(A2X, granularity); append!(barDataA2X, tempA2X)
+    end
+    function WeightedAverage(v, n)
+        if sum(.!isnan.(n)) == 0
+            return NaN
+        else
+            indeces = findall(!isnan, n)
+            return sum(v[indeces] .* n[indeces]) / sum(n[indeces])
+        end
+    end
+    gdfJSE = groupby(barDataJSE, :TimeStamp); gdfA2X = groupby(barDataA2X, :TimeStamp) # Split
+    dfJSE = combine([:Volume, :N] => (v, n) -> (v = WeightedAverage(v, n)), gdfJSE); dfA2X = combine([:Volume, :N] => (v, n) -> (v = WeightedAverage(v, n)), gdfA2X) # Apply and combine
+    CSV.write(string("Test Data/JSE/Bar/CombinedTransactionBars", 10, "min.csv"), barDataJSE); CSV.write(string("Test Data/A2X/Bar/CombinedTransactionBars", 10, "min.csv"), barDataA2X)
 end
+CombineTransactionBarData(10, JSE_tickers, A2X_tickers)
+#---------------------------------------------------------------------------
 
 
-
-
-
-
-
-### 2. Construct micro-price bar data
+### 3. Construct micro-price bar data
 function MakeMicroPriceBars(data::DataFrame, barsize::Integer)
     # Extract TimeStamp and transaction data
     data = data[:,[1;10]]
@@ -128,10 +109,9 @@ function MakeMicroPriceBars(data::DataFrame, barsize::Integer)
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
     dates_unique = unique(dates)
-    dates_unique = filter(x -> x >= Date("2019-01-01"), dates_unique)
+    #dates_unique = filter(x -> x >= Date("2019-01-01"), dates_unique)
     # Create master dataframe to store all useful information
-    master_df = DataFrame(TimeStamp = DateTime[],
-    Open = Float64[], High = Float64[], Low = Float64[], Close = Float64[])
+    master_df = DataFrame(TimeStamp = DateTime[], Open = Float64[], High = Float64[], Low = Float64[], Close = Float64[])
     # Loop through each day and extract useful data
     @showprogress "Computing..." for i in 1:length(dates_unique)
         # Create extract data from each day
@@ -145,7 +125,7 @@ function MakeMicroPriceBars(data::DataFrame, barsize::Integer)
         # Loop through the bars to create the OHLCV + VWAP bars
         for j in 2:length(bars)
             # filter out data within the bar
-            bardata = tempdata[findall(x-> x>bars[j-1] && x<=bars[j], tempdata[:,1]),:]
+            bardata = tempdata[findall(x-> x>bars[j-1] && x<=bars[j], tempdata[:,1]), :]
             # Check if bar is empty
             if !isempty(bardata)
                 # Not empty; make OHLCV + VWAP
@@ -168,15 +148,15 @@ end
 for interval in [1, 10, 20]
     # JSE bar data
     barDataJSE = MakeMicroPriceBars(NPNJSE, interval)
-    CSV.write(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"), barDataJSE)
+    CSV.write(string("Test Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"), barDataJSE)
     # A2X bar data
     barDataA2X = MakeMicroPriceBars(NPNA2X, interval)
-    CSV.write(string("Real Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"), barDataA2X)
+    CSV.write(string("Test Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"), barDataA2X)
 end
 #---------------------------------------------------------------------------
 
 
-### 3. Generate candlestick plots
+### 4. Generate candlestick plots
 function candlestick(data::DataFrame, date::String, interval::Int)
     # Get indicies for the date to plot
     inds = findall(x->x==Date(date), Date.(data[:,1]))

@@ -1,29 +1,24 @@
-## Author: Patrick Chang & Ivan Jerivich
-# Script file to plot the price impact of 10 equities
-# from JSE and A2X over the same period of 2019-01-02 to 2019-07-15.
-
+### Title: Price impact
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Visualise the price impact curves of JSE and A2X equities over the same period
+### Structure:
+# 1. Preliminaries
+# 2. Compute price impact curves
+# 3. Visualization
 #---------------------------------------------------------------------------
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots
-using Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
-# JSE tickers
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
+### 1. Preamble
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
+A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+#---------------------------------------------------------------------------
 
-# A2X tickers
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
-# Load the price impact data from each exchange
-
-A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")
-A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld")
-JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
-
-## Function to construct the plotting information for impact
-function getPriceImpact(data::DataFrame; low = -3, up = 1)
+### 2. Compute price impact curves
+function getPriceImpact(data::DataFrame; low = -3, up = 1) # Function to construct the plotting information for impact
     data = data[findall(!isnan, data[:,1]),:]
     xx = 10 .^(range(low, up, length = 21))
     Δp = []
@@ -42,8 +37,6 @@ function getPriceImpact(data::DataFrame; low = -3, up = 1)
     val_inds = setdiff(val_inds, findall(isnan,Δp))
     return ω[val_inds], Δp[val_inds]
 end
-
-## Function to plot the price impact
 function PlotImpact(data, ticker::Vector, side::Symbol; low = -3, up = 1)
     # Extract appropriate side
     if side == :buy
@@ -74,18 +67,12 @@ function PlotImpact(data, ticker::Vector, side::Symbol; low = -3, up = 1)
         ylabel!(L"\Delta p^*")
     end
 end
+#---------------------------------------------------------------------------
 
 
-## Obtain results
-
-PlotImpact(JSE_PriceImpact, JSE_tickers, :buy, low = -3, up = 1)
-# savefig("Plots/JSEImpactBuy.svg")
-
-PlotImpact(JSE_PriceImpact, JSE_tickers, :sell, low = -3, up = 1)
-# savefig("Plots/JSEImpactSell.svg")
-
-PlotImpact(A2X_PriceImpact, A2X_tickers, :buy, low = -3, up = 1)
-# savefig("Plots/A2XImpactBuy.svg")
-
-PlotImpact(A2X_PriceImpact, A2X_tickers, :sell, low = -3, up = 1)
-# savefig("Plots/A2XImpactSell.svg")
+### 3. Visualization
+PlotImpact(JSE_PriceImpact, JSE_tickers, :buy, low = -3, up = 1); savefig("Figures/JSEImpactBuy.pdf")
+PlotImpact(JSE_PriceImpact, JSE_tickers, :sell, low = -3, up = 1); savefig("Figures/JSEImpactSell.pdf")
+PlotImpact(A2X_PriceImpact, A2X_tickers, :buy, low = -3, up = 1); savefig("Figures/A2XImpactBuy.pdf")
+PlotImpact(A2X_PriceImpact, A2X_tickers, :sell, low = -3, up = 1); savefig("Figures/A2XImpactSell.pdf")
+#---------------------------------------------------------------------------

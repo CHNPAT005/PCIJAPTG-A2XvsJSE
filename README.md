@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-![fyhjy](A2XLogo.png)
+![fyhjy](Figures/A2XLogo.png)
 
 ## Authors
 * Ivan Jericevich

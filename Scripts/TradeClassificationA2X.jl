@@ -1,25 +1,22 @@
-## Author: Patrick Chang and Ivan Jerivich
-# Script file to investigate the accuracy of rules to infer
-# the trade classification.
-# Here we only perform this for A2X data, as we have unique access
-# to the true trade classification in this case.
-# We consider the three most liquid tickers on the exchange:
-# NPN, SBK and SLM
+### Title: Trade Classification - A2X
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Investigate the accuracy of rules to infer the trade classification
+### Structure:
+# 1. Preliminaries
+# 2. Classification rules
+# 3. Implement classification rules
+#---------------------------------------------------------------------------
 
-## Preamble
 
-using CSV, DataFrames, JLD, Dates, ProgressMeter, Statistics
+### 1. Preliminaries
+using CSV, CodecBzip2, DataFrames, ProgressMeter, Dates, JLD, Statistics
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+NPN = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_NPN.csv"); SBK = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_SBK.csv"); SLM = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_SLM.csv")
+#---------------------------------------------------------------------------
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
-NPN = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_NPN.csv")
-SBK = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SBK.csv")
-SLM = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_SLM.csv")
-
-## Functions:
-# Function to compare the number of correct classifications against the
-# ground truth. Computes the number of correct classifications.
-function correctmatch(trueclass, inferredclass)
+### 2. Classification rules
+function correctmatch(trueclass, inferredclass) # Compare the number of correct classifications against the ground truth. Computes the number of correct classifications.
     n = length(trueclass)
     noclass = 0
     k = 0
@@ -36,10 +33,7 @@ function correctmatch(trueclass, inferredclass)
     end
     return k, n, noclass
 end
-
-# Function to obtain the quote rule classification, perform comparisons
-# to obtain percentage of correct classifications
-function QuoteRule(data::DataFrame)
+function QuoteRule(data::DataFrame) # obtain the quote rule classification, perform comparisons to obtain percentage of correct classifications
     # Split the data into individual days
     dates = Date.(data[:,2])
     dates_unique = unique(dates)
@@ -63,9 +57,7 @@ function QuoteRule(data::DataFrame)
             TradeValue = tempdata[tradeinds[j], 8]
             tempdata[1:tradeinds[j], 12]
             MidQuoteBeforeTrade = tempdata[findlast(!isnan, tempdata[1:tradeinds[j], 12]), 12]
-            # Perform the logic checks
-            # if transaction occurs at a prices higher (lower) than the mid price
-            # the trades are classified as buyer (seller) initiated
+            # Perform the logic checks. If transaction occurs at a prices higher (lower) than the mid price the trades are classified as buyer (seller) initiated
             if TradeValue > MidQuoteBeforeTrade
                 # Transaction is higher than mid price => BuyerInitiated
                 push!(inferredclassification, "BuyerInitiated")
@@ -89,10 +81,7 @@ function QuoteRule(data::DataFrame)
     percentage_correct = correct / (total + uncomparable)
     return percentage_correct, correct, total, uncomparable
 end
-
-# Function to obtain the tick rule classification, perform comparisons
-# to obtain percentage of correct classifications
-function TickRule(data::DataFrame)
+function TickRule(data::DataFrame) # Obtain the tick rule classification, perform comparisons to obtain percentage of correct classifications
     # Split the data into individual days
     dates = Date.(data[:,2])
     dates_unique = unique(dates)
@@ -112,8 +101,7 @@ function TickRule(data::DataFrame)
         trueclassification = tempdata[tradeinds, 10]
         # Initialise inferred classification
         inferredclassification = fill("", length(trueclassification), 1)
-        # We do not classify the first trade of the day.
-        # Don't use the convension of classifying first trade of each day as uptick
+        # We do not classify the first trade of the day. Don't use the convension of classifying first trade of each day as uptick
         if length(tradeinds) > 1
             # Loop through each trade and classify according to quote rule
             for j in 2:length(tradeinds)
@@ -146,20 +134,17 @@ function TickRule(data::DataFrame)
         end
         # Compare the classification
         compare = correctmatch(trueclassification, inferredclassification)
-        # add the number of comparisons
+        # Add the number of comparisons
         total += compare[2]
-        # add the number of uncomparable trades
+        # Add the number of uncomparable trades
         uncomparable += compare[3]
-        # add the number of correct comparisons
+        # Add the number of correct comparisons
         correct += compare[1]
     end
     percentage_correct = correct / (total + uncomparable)
     return percentage_correct, correct, total, uncomparable
 end
-
-# Function to obtain the Lee-Ready classification, perform comparisons
-# to obtain percentage of correct classifications
-function LeeReady(data::DataFrame)
+function LeeReady(data::DataFrame) # Obtain the Lee-Ready classification, perform comparisons to obtain percentage of correct classifications
     # Split the data into individual days
     dates = Date.(data[:,2])
     dates_unique = unique(dates)
@@ -228,31 +213,21 @@ function LeeReady(data::DataFrame)
         end
         # Compare the classification
         compare = correctmatch(trueclassification, inferredclassification)
-        # add the number of comparisons
+        # Add the number of comparisons
         total += compare[2]
-        # add the number of uncomparable trades
+        # Add the number of uncomparable trades
         uncomparable += compare[3]
-        # add the number of correct comparisons
+        # Add the number of correct comparisons
         correct += compare[1]
     end
     percentage_correct = correct / (total + uncomparable)
     return percentage_correct, correct, total, uncomparable
 end
-
-# Obtain the results
 #---------------------------------------------------------------------------
 
-# Naspers
-QuoteRule(NPN)
-TickRule(NPN)
-LeeReady(NPN)
 
-# Standard Bank
-QuoteRule(SBK)
-TickRule(SBK)
-LeeReady(SBK)
-
-# Sanlam
-QuoteRule(SLM)
-TickRule(SLM)
-LeeReady(SLM)
+### 3. Implement classification rules
+QuoteRule(NPN); TickRule(NPN); LeeReady(NPN) # Naspers
+QuoteRule(SBK); TickRule(SBK); LeeReady(SBK) # Standard Bank
+QuoteRule(SLM); TickRule(SLM); LeeReady(SLM) # Sanlam
+#---------------------------------------------------------------------------

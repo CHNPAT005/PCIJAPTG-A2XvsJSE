@@ -1,6 +1,6 @@
 ### Title: Data Cleaning - A2X
 ### Authors: Patrick Chang and Ivan Jericevich
-### Function: Convert the raw A2X data into a detailed and usable L1LOB format.
+### Function: Convert the raw A2X data into a detailed and usable L1LOB format
 ### Structure:
 # 1. Preliminaries
 # 2. Cleaning functions

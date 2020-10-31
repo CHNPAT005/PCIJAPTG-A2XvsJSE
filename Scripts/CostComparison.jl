@@ -1,4 +1,4 @@
-### Title: Data Cleaning - A2X
+### Title: Cost comparison
 ### Authors: Patrick Chang and Ivan Jericevich
 ### Function: Plot the price impact (with direct cost incorporated) for 10 equities from JSE and A2X over the same period of 2019-01-02 to 2019-07-15
 ### Structure:

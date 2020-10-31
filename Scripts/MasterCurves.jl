@@ -175,10 +175,10 @@ JSEBuy = optimize(getJSEerrorBuy, [0.3, 0.3]); JSEBuyParam = JSEBuy.minimizer
 JSESell = optimize(getJSEerrorSell, [0.3, 0.3]); JSESellParam = JSESell.minimizer
 A2XBuy = optimize(getA2XerrorBuy, [0.3, 0.3]); A2XBuyParam = A2XBuy.minimizer
 A2XSell = optimize(getA2XerrorSell, [0.3, 0.3]); A2XSellParam = A2XSell.minimizer
-save("Computed Data/JSEParams.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
-save("Computed Data/A2XParams.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
-JSEParams = load("Computed Data/JSEParams.jld"); JSEBuyParam = JSEParams["JSEBuyParam"]; JSESellParam = JSEParams["JSESellParam"]
-A2XParams = load("Computed Data/A2XParams.jld"); A2XBuyParam = A2XParams["A2XBuyParam"]; A2XSellParam = A2XParams["A2XSellParam"]
+save("Test Data/JSE/Price Impact/JSEParams.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
+save("Test Data/A2X/Price Impact/A2XParams.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
+JSEParams = load("Test Data/JSE/Price Impact/JSEParams.jld"); JSEBuyParam = JSEParams["JSEBuyParam"]; JSESellParam = JSEParams["JSESellParam"]
+A2XParams = load("Test Data/A2X/Price Impact/A2XParams.jld"); A2XBuyParam = A2XParams["A2XBuyParam"]; A2XSellParam = A2XParams["A2XSellParam"]
 #---------------------------------------------------------------------------
 
 

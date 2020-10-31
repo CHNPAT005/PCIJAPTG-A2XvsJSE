@@ -175,13 +175,13 @@ function candlestick(data::DataFrame, date::String, interval::Int)
 end
 for interval in [1, 10, 20]
     # JSE
-    NPNJSEMicroBars = CSV.read(string("Real Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
+    NPNJSEMicroBars = CSV.read(string("Test Data/JSE/Bar/NPNMicroPriceBars", interval, "min.csv"))
     candlestickJSE = candlestick(NPNJSEMicroBars, "2019-07-12", interval)
-    savefig(candlestickJSE, string("Plots/NPNJSEMicroPriceBars", interval, "min.svg"))
+    savefig(candlestickJSE, string("Figures/NPNJSEMicroPriceBars", interval, "min.svg"))
     # A2X
-    NPNA2XMicroBars = CSV.read(string("Real Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
+    NPNA2XMicroBars = CSV.read(string("Test Data/A2X/Bar/NPNMicroPriceBars", interval, "min.csv"))
     NPNA2XMicroBars[:,2:5] = NPNA2XMicroBars[:,2:5] ./ 10^5
     candlestickA2X = candlestick(NPNA2XMicroBars, "2019-07-12", interval)
-    savefig(candlestickA2X, string("Plots/NPNA2XMicroPriceBars", interval, "min.svg"))
+    savefig(candlestickA2X, string("Figures/NPNA2XMicroPriceBars", interval, "min.svg"))
 end
 #---------------------------------------------------------------------------

@@ -36,4 +36,4 @@ Clone the repository
 ```sh
 git clone https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE.git
 ```
-The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the [Test Data](PCIJAPTG-A2XvsJSE/tree/release/Test Data/) folder.
+The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the [Test Data](PCIJAPTG-A2XvsJSE/release/Test Data/) folder. The Computed data folder contains pre-computed results (julia`.jld` files) that apply to both exchanges. All other data specific to each exchange can be found in the Test Data folder.

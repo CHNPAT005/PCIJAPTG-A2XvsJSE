@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-<img src="Figures/A2XLogo.png" width="48">
+<img src="Figures/A2XLogo.png" width="48"> <img src="https://www.bing.com/images/search?view=detailV2&ccid=dNiBI6yR&id=2F71CA79B73D3C9139606F01E17B033A7C71779A&thid=OIP.dNiBI6yRSq-7FuDY16BjVQGQCc&mediaurl=https%3a%2f%2flokshineconomics.files.wordpress.com%2f2015%2f02%2fnew_johannesburg_stock_exchange_logo_2014.png&exph=219&expw=562&q=JSE+Logo&simid=608009297529212905&ck=CD5321E7256A46DF03F0F304EBA58759&selectedIndex=8&FORM=IRPRST" width="48">
 
 ## Authors
 * Ivan Jericevich

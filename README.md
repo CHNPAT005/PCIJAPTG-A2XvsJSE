@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-<img src="Figures/A2XLogo.png" width="48"> <img src="Figures/JSELogo.png" width="48">
+<img src="Figures/A2XLogo.png" width="48"> <img src="Figures/JSELogo.png" width="50">
 
 ## Authors
 * Ivan Jericevich

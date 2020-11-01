@@ -36,4 +36,4 @@ Clone the repository
 ```sh
 git clone https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE.git
 ```
-The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges ([2019-07-8 - 2019-07-12](../Test Data/)).
+The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12).

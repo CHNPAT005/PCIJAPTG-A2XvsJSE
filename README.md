@@ -1,6 +1,6 @@
 # PCIJAPTG-A2XvsJSE
 
-<img src="Figures/A2XLogo.png" width="48"> <img src="Figures/JSELogo.png" width="50">
+<img src="Figures/A2XLogo.png" width="48"> <img src="Figures/JSELogo.png" width="48">
 
 ## Authors
 * Ivan Jericevich
@@ -9,7 +9,7 @@
 * Tim Gebbie
 
 ## Introduction
-This repository details the implementation of an exploratory data analysis of the South African market microstructure. Specifically, it considers shared listings on two South African equity exchanges: the Johannesburg Stock Exchange and the A2X exchange. The Johannesburg Stock Exchange was established in 1887 and has grown to be the largest stock exchange in Africa with 342 listings and a combined market cap of over R14trn as of August 2020. The JSE started High Frequency Trading when their matching engine moved from London to Johannesburg in 2012. A2X, on the other hand, is a relatively new exchange founded by Sean Melnick, Ashley Mendelowitz and Kevin Brady in October 2014 and went live three years later with the aim of improving execution, lowering transaction and clearing fees, narrowing spreads and increasing market activity. As of June 2020, A2X has 37 listed securities with a combined market cap of over R2.2trn.
+This repository details the implementation of an exploratory data analysis of the South African market microstructure. Specifically, it considers shared listings on two South African equity exchanges: the Johannesburg Stock Exchange and the A2X exchange.
 
 |A2X                     |                 |JSE                         |                 |
 |------------------------|-----------------|----------------------------|-----------------|
@@ -32,3 +32,8 @@ This repository details the implementation of an exploratory data analysis of th
 * The test data sets accompanied herewith which can also be found at <http://linktozivahub/datasets/>
 
 ## Usage
+Clone the repository
+```sh
+git clone https://github.com/CHNPAT005/PCIJAPTG-A2XvsJSE.git
+```
+The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges ([2019-07-8 - 2019-07-12](../Test Data)).

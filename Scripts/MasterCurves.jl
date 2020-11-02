@@ -256,27 +256,24 @@ PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell); savefig("Figures/
 # - Get master curves for each ticker using these scalings
 # - Return an array of impacts and an array of normalized volumes
 function Bootstrap(M::Int64, exchangeData::Tuple{Dict{Any,Any},Dict{Any,Any},Dict{Any,Any}}, initiated::Symbol, exchange::Symbol)
+    parameters = load("Test Data/JSE/Price Impact/JSEParams.jld")["JSEBuyParam"]
     tickers = initiated == :Buy ? keys(exchangeData[1]) : keys(exchangeData[2]) # Extract tickers
     volumes = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers) # Initialise matrix of price impacts with rows corresponding to bootstrap samples
     impacts = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers)
-    p = Progress(M * ( 2 * length(tickers)))#, barglyphs = BarGlyphs('|','█', ['▁' ,'▂' ,'▃' ,'▄' ,'▅' ,'▆', '▇'],' ','|',), desc = "Computing:")
-    for m in 1:M # Number of bootstrap samples
+    @showprogress "Computing:" for m in 1:M # Number of bootstrap samples
         if initiated == :Buy
             data = exchangeData[1] # Extract relevant side
             bootstrapSample = Dict() # Initialise dictionary of bootstrap samples with keys corresponding to tickers
             for ticker in tickers
                 bootstrapIndeces = sample(1:nrow(data[ticker]), nrow(data[ticker]), replace = true) # Sample with replacement to get bootstrap sample
                 bootstrapSample[ticker] = data[ticker][bootstrapIndeces, :]
-                next!(p)
             end
-            parameters = optimize(θ -> getJSEerrorBuy(θ; data = (bootstrapSample, exchangeData[2], exchangeData[3])), [0.3, 0.3]) |> Optim.minimizer # The second index of the data tuple is not relevant
         else
             return nothing
         end
         for ticker in tickers
             result = getMasterImpact(bootstrapSample[ticker], exchangeData[3][ticker], parameters)
             volumes[ticker] = hcat(volumes[ticker], result[1]); impacts[ticker] = hcat(impacts[ticker], result[2])
-            next!(p)
         end
     end
     return Dict(:volumes => volumes, :impacts => impacts)

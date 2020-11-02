@@ -1,28 +1,22 @@
-## Author: Patrick Chang & Ivan Jerivich
-# Script file to plot the price impact (with direct cost incorporated) for 10 equities
-# from JSE and A2X over the same period of 2019-01-02 to 2019-07-15.
-
+### Title: Cost comparison
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Plot the price impact (with direct cost incorporated) for 10 equities from JSE and A2X over the same period of 2019-01-02 to 2019-07-15
+### Structure:
+# 1. Preliminaries
+# 2. Compute and plot costs
 #---------------------------------------------------------------------------
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots
-using Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
-# JSE tickers
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
+### 1. Preliminaries
+using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
+A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+#---------------------------------------------------------------------------
 
-# A2X tickers
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 
-# Load the price impact data from each exchange
-
-A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")
-A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld")
-JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
-
-## Function to construct the plotting information for costs
+### 2. Compute and plot costs
 function getCosts(data::DataFrame, type::Symbol; low = -3, up = 1)
     data = data[findall(!isnan, data[:,1]),:]
     xx = 10 .^(range(low, up, length = 21))
@@ -42,9 +36,6 @@ function getCosts(data::DataFrame, type::Symbol; low = -3, up = 1)
     val_inds = setdiff(val_inds, findall(isnan,Δp))
     return ω[val_inds], Δp[val_inds]
 end
-
-## Function to plot the costs
-# type = :Spread, :DirectCost, :Cost
 function PlotCosts(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1)
     # Extract appropriate side
     if side == :buy
@@ -99,28 +90,12 @@ function PlotCosts(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, JSEtic
         end
     end
 end
-
-
-PlotCosts(:Cost, :buy)
-# savefig("Plots/BuyCost.svg")
-
-PlotCosts(:Cost, :sell)
-# savefig("Plots/SellCost.svg")
-
-PlotCosts(:DirectCost, :buy)
-# savefig("Plots/DirectCostBuy.svg")
-
-PlotCosts(:DirectCost, :sell)
-# savefig("Plots/DirectCostSell.svg")
-
-PlotCosts(:Spread, :buy)
-# savefig("Plots/SpreadCostBuy.svg")
-
-PlotCosts(:Spread, :sell)
-# savefig("Plots/SpreadCostSell.svg")
-
-PlotCosts(:Impact, :buy)
-# savefig("Plots/ImpactCostBuy.svg")
-
-PlotCosts(:Impact, :sell)
-# savefig("Plots/ImpactCostSell.svg")
+PlotCosts(:Cost, :buy); savefig("Figures/BuyCost.svg")
+PlotCosts(:Cost, :sell); savefig("Figures/SellCost.svg")
+PlotCosts(:DirectCost, :buy); savefig("Figures/DirectCostBuy.svg")
+PlotCosts(:DirectCost, :sell); savefig("Figures/DirectCostSell.svg")
+PlotCosts(:Spread, :buy); savefig("Figures/SpreadCostBuy.svg")
+PlotCosts(:Spread, :sell); savefig("Figures/SpreadCostSell.svg")
+PlotCosts(:Impact, :buy); savefig("Figures/ImpactCostBuy.svg")
+PlotCosts(:Impact, :sell); savefig("Figures/ImpactCostSell.svg")
+#---------------------------------------------------------------------------

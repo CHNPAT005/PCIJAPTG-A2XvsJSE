@@ -1,34 +1,24 @@
-## Author: Patrick Chang & Ivan Jerivich
-# Script file to plot the price impact master curve of 10 equities
-# from JSE and A2X combined together over the same period of 2019-01-02 to 2019-07-15.
-# Looking for a possible universal master curve for the SA equity market
-
-#---------------------------------------------------------------------------
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim
-using Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
-
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
-
-# JSE tickers
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
-
-# A2X tickers
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-
-# Read in the data
-A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")
-A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld")
-JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
-
-#---------------------------------------------------------------------------
-## Estimate γ and δ for SA market using 10 equities from each exchange
-# Note: δ = param[1]; γ = param[2]
-# δ is for scaling of volume, γ is for scaling of impact
+### Title: Master curves for 10 equities
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Looking for a possible universal master curve for the SA equity market
+### Structure:
+# 1. Preliminaries
+# 2. Estimate γ and δ for SA market using 10 equities from each exchange
+# 3. Visualisation
 #---------------------------------------------------------------------------
 
-function getErrorBuy(param; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1)
+
+### 1. Preliminaries
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, StatsBase
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
+A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+#---------------------------------------------------------------------------
+
+
+### 2. Estimate γ and δ for SA market using 10 equities from each exchange
+function getErrorBuy(param; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1) # δ is for scaling of volume, γ is for scaling of impact
     # Extract appropriate side
     ADV_JSE = dataJSE[3]; ADV_A2X = dataA2X[3]
     dataJSE = dataJSE[1]; dataA2X = dataA2X[1]
@@ -85,7 +75,6 @@ function getErrorBuy(param; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, 
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
 function getErrorSell(param; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1)
     # Extract appropriate side
     ADV_JSE = dataJSE[3]; ADV_A2X = dataA2X[3]
@@ -143,27 +132,14 @@ function getErrorSell(param; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers,
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
-
-SABuy = optimize(getErrorBuy, [0.3, 0.3])
-SABuyParam = SABuy.minimizer
-
-SASell = optimize(getErrorSell, [0.3, 0.3])
-SASellParam = SASell.minimizer
-
+SABuy = optimize(getErrorBuy, [0.3, 0.3]); SABuyParam = SABuy.minimizer
+SASell = optimize(getErrorSell, [0.3, 0.3]); SASellParam = SASell.minimizer
 save("Computed Data/SAParams.jld", "SABuyParam", SABuyParam, "SASellParam", SASellParam)
-
-## Load the parameters
+SAParams = load("Computed Data/SAParams.jld"); SABuyParam = SAParams["SABuyParam"]; SASellParam = SAParams["SASellParam"]
 #---------------------------------------------------------------------------
 
-SAParams = load("Computed Data/SAParams.jld")
-SABuyParam = SAParams["SABuyParam"]
-SASellParam = SAParams["SASellParam"]
 
-## Plot the results
-#---------------------------------------------------------------------------
-
-## Function to construct the plotting information for impact
+### 3. Visualisation
 function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1, up = 1)
     # Get parameters
     δ = param[1]; γ = param[2]
@@ -188,8 +164,6 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
     val_inds = setdiff(val_inds, findall(isnan,Δp))
     return ω[val_inds], Δp[val_inds], val_inds
 end
-
-## Function to plot the price impact
 function PlotMaster(param::Vector, side::Symbol; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1)
     # Extract liquidity
     ADV_JSE = dataJSE[3]; ADV_A2X = dataA2X[3]
@@ -230,9 +204,6 @@ function PlotMaster(param::Vector, side::Symbol; dataJSE = JSE_PriceImpact, JSEt
         ylabel!(L"\Delta p^* C^{\gamma}")
     end
 end
-
-PlotMaster(SABuyParam, :buy)
-# savefig("Plots/SABuy.svg")
-
-PlotMaster(SASellParam, :sell)
-# savefig("Plots/SASell.svg")
+PlotMaster(SABuyParam, :buy); savefig("Figures/SABuy.svg")
+PlotMaster(SASellParam, :sell); savefig("Figures/SASell.svg")
+#---------------------------------------------------------------------------

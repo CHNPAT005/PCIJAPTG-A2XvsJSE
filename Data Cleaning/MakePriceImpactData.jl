@@ -1,45 +1,119 @@
-## Author: Patrick Chang and Ivan Jerivich
-# Script file to extract the relavent price impact information
-# from the 10 most liquid tickers in each exchange.
-# The price impact is extracted for the period of 2019-01-02 to 2019-07-15
-# from both exchanges.
+### Title: Extract relevant price-impact information
+### Authors: Patrick Chang and Ivan Jericevich
+### Function:
+### Structure:
+# 1. Preliminaries
+# 2. Supporting functions for computing direct costs
+# 3. Data extraction for price impact
+# 4. Implement price-impact extraction functions
+#---------------------------------------------------------------------------
 
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots
-using Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
+### 1. Preliminaries
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Statistics
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
+#---------------------------------------------------------------------------
 
-# JSE tickers
-JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]
 
-# A2X tickers
-A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-
-## Supporting functions to compute the direct costs
-# Note that the Ceiling value is in terms of Rands
-# Note that JSE values are reported in ZAC
-# Note that A2X values are reported in ZAC * 10^5
+### 2. Supporting functions for computing direct costs
+# The Ceiling value is in terms of Rands
+# JSE values are reported in ZAC
+# A2X values are reported in ZAC * 10^5
 function JSEDirectCost(TransactionValue; bpsTrade = 0.48, TradeMax = 420.4, bpsSettle = 0.36, SettleMax = 180)
     # Transaction fee
     TradeFee = min(TransactionValue * bpsTrade / 100, TradeMax*10^2)
     SettleFee = min(TransactionValue * bpsSettle / 100, SettleMax*10^2)
     return TradeFee + SettleFee
 end
-
 function A2XDirectCost(TransactionValue; bpsTrade = 0.4, TradeMax = 355, bpsSettle = 0.29, SettleMax = 154)
     # Transaction fee
     TradeFee = min(TransactionValue * bpsTrade / 100, TradeMax*10^7)
     SettleFee = min(TransactionValue * bpsSettle / 100, SettleMax*10^7)
     return TradeFee + SettleFee
 end
-
-## Data extraction for price impact
 #---------------------------------------------------------------------------
-## Function to extract relavent information to create price impact for JSE dataset
-# data: is the dataset we want to extract
-# side: two options :buy or :sell, returns either buyer or seller initiated info
-function getPriceImpactInfoJSE(data::DataFrame, side::Symbol)
+
+
+### 3. Data extraction for price impact
+function CleanA2X(data::DataFrame) # Further cleaning of the A2X data is necessary before any extraction can occur
+    # Extract the dates
+    dates = Date.(data[:,2])
+    # Get unique dates
+    dates_unique = unique(dates)
+    # Only keep dates between 2019-01-01 and 2019-07-15
+    dates_unique = filter(x-> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
+    # Create master dataframe to store all useful information
+    master_df = DataFrame(Date = DateTime[], EventType = String[],
+    Trade = Float64[], TradeVol = Float64[],
+    MidPrice = Float64[], TradeSign = String[])
+    # Loop through each day and extract useful data
+    for k in 1:length(dates_unique)
+        # Extract data from each day
+        tempday = dates_unique[k]
+        tempdata = data[findall(x -> x == tempday, dates), :]
+        # Find the index where trades occur
+        tradeinds = findall(x -> x == "TRADE", tempdata[:,3])
+        # Extract trade values
+        TradeValues = tempdata[tradeinds, 8]
+        # Initialise inferred classification
+        inferredclassification = fill("", size(tempdata)[1], 1)
+        # Loop through each trade and classify according to quote rule
+        for j in 1:length(tradeinds)
+            # Get trade value
+            TradeValue = tempdata[tradeinds[j], 8]
+            tempdata[1:tradeinds[j], 12]
+            MidQuoteBeforeTrade = tempdata[findlast(!isnan, tempdata[1:tradeinds[j], 12]), 12]
+            # Perform the logic checks: begin with quote rule
+            if TradeValue > MidQuoteBeforeTrade
+                # Transaction is higher than mid price => BuyerInitiated
+                inferredclassification[tradeinds[j]] = "BuyerInitiated"
+            elseif TradeValue < MidQuoteBeforeTrade
+                # Transaction is lower than mid price => SellerInitiated
+                inferredclassification[tradeinds[j]] = "SellerInitiated"
+            elseif TradeValue == MidQuoteBeforeTrade
+                # Quote rule failed, go to tick rule
+                if j > 1
+                    if TradeValues[j] > TradeValues[j-1]
+                        # If trade is higher than previous trade => BuyerInitiated
+                        inferredclassification[tradeinds[j]] = "BuyerInitiated"
+                    elseif TradeValues[j] < TradeValues[j-1]
+                        # If trade is lower than previous trade => SellerInitiated
+                        inferredclassification[tradeinds[j]] = "SellerInitiated"
+
+                    elseif TradeValues[j] == TradeValues[j-1]
+                        # If trades are the same, find last trade that was different
+                        indTradeLast = findlast(x -> x != TradeValues[j], TradeValues[1:j])
+                        if isnothing(indTradeLast)
+                            # No classification, all trades before was the same
+                            inferredclassification[tradeinds[j]] = ""
+                        else
+                            # Compare against last trade that was different
+                            TradeLast = TradeValues[indTradeLast]
+                            if TradeValues[j] > TradeLast
+                                # If trade is higher than previous trade => BuyerInitiated
+                                inferredclassification[tradeinds[j]] = "BuyerInitiated"
+                            elseif TradeValues[j] < TradeLast
+                                # If trade is lower than previous trade => SellerInitiated
+                                inferredclassification[tradeinds[j]] = "SellerInitiated"
+                            end
+                        end
+                    end
+                else
+                    # If first trade can't be classified
+                    inferredclassification[tradeinds[j]] = ""
+                end
+            end
+        end
+        # Push the data into master dataframe
+        for i in 1:size(tempdata)[1]
+            temp = (tempdata[i,2], tempdata[i,3], tempdata[i,8], tempdata[i,9], tempdata[i,12], inferredclassification[i])
+            push!(master_df, temp)
+        end
+    end
+    return master_df
+end
+function getPriceImpactInfoJSE(data::DataFrame, side::Symbol) # Extract relavent information to create price impact for JSE dataset
     # Extract the dates
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
@@ -122,11 +196,7 @@ function getPriceImpactInfoJSE(data::DataFrame, side::Symbol)
     end
     return master_df, AVD
 end
-
-## Function to extract relavent information to create price impact for A2X dataset
-# data: is the dataset we want to extract
-# side: two options :buy or :sell, returns either buyer or seller initiated info
-function getPriceImpactInfoA2X(data::DataFrame, side::Symbol)
+function getPriceImpactInfoA2X(data::DataFrame, side::Symbol) # Extract relavent information to create price impact for A2X dataset
     # Extract the dates
     dates = Date.(data[:,1])
     # Get unique dates and start from 2019-01-01 onwards
@@ -204,101 +274,13 @@ function getPriceImpactInfoA2X(data::DataFrame, side::Symbol)
     end
     return master_df, ADV
 end
-
-## Function to further clean the A2X datasets
-# Only consider trading within same period as JSE. Can drop out most of the
-# attributes. Classify trades according to Lee-Ready so that it is compatible
-# to JSE classifications
-function CleanA2X(data::DataFrame)
-    # Extract the dates
-    dates = Date.(data[:,2])
-    # Get unique dates
-    dates_unique = unique(dates)
-    # Only keep dates between 2019-01-01 and 2019-07-15
-    dates_unique = filter(x-> x>=Date("2019-01-01") && x<=Date("2019-07-15"), dates_unique)
-    # Create master dataframe to store all useful information
-    master_df = DataFrame(Date = DateTime[], EventType = String[],
-    Trade = Float64[], TradeVol = Float64[],
-    MidPrice = Float64[], TradeSign = String[])
-    # Loop through each day and extract useful data
-    for k in 1:length(dates_unique)
-        # Extract data from each day
-        tempday = dates_unique[k]
-        tempdata = data[findall(x -> x == tempday, dates), :]
-        # Find the index where trades occur
-        tradeinds = findall(x -> x == "TRADE", tempdata[:,3])
-        # Extract trade values
-        TradeValues = tempdata[tradeinds, 8]
-        # Initialise inferred classification
-        inferredclassification = fill("", size(tempdata)[1], 1)
-        # Loop through each trade and classify according to quote rule
-        for j in 1:length(tradeinds)
-            # Get trade value
-            TradeValue = tempdata[tradeinds[j], 8]
-            tempdata[1:tradeinds[j], 12]
-            MidQuoteBeforeTrade = tempdata[findlast(!isnan, tempdata[1:tradeinds[j], 12]), 12]
-            # Perform the logic checks: begin with quote rule
-            if TradeValue > MidQuoteBeforeTrade
-                # Transaction is higher than mid price => BuyerInitiated
-                inferredclassification[tradeinds[j]] = "BuyerInitiated"
-            elseif TradeValue < MidQuoteBeforeTrade
-                # Transaction is lower than mid price => SellerInitiated
-                inferredclassification[tradeinds[j]] = "SellerInitiated"
-            elseif TradeValue == MidQuoteBeforeTrade
-                # Quote rule failed, go to tick rule
-                if j > 1
-                    if TradeValues[j] > TradeValues[j-1]
-                        # If trade is higher than previous trade => BuyerInitiated
-                        inferredclassification[tradeinds[j]] = "BuyerInitiated"
-                    elseif TradeValues[j] < TradeValues[j-1]
-                        # If trade is lower than previous trade => SellerInitiated
-                        inferredclassification[tradeinds[j]] = "SellerInitiated"
-
-                    elseif TradeValues[j] == TradeValues[j-1]
-                        # If trades are the same, find last trade that was different
-                        indTradeLast = findlast(x -> x != TradeValues[j], TradeValues[1:j])
-                        if isnothing(indTradeLast)
-                            # No classification, all trades before was the same
-                            inferredclassification[tradeinds[j]] = ""
-                        else
-                            # Compare against last trade that was different
-                            TradeLast = TradeValues[indTradeLast]
-                            if TradeValues[j] > TradeLast
-                                # If trade is higher than previous trade => BuyerInitiated
-                                inferredclassification[tradeinds[j]] = "BuyerInitiated"
-                            elseif TradeValues[j] < TradeLast
-                                # If trade is lower than previous trade => SellerInitiated
-                                inferredclassification[tradeinds[j]] = "SellerInitiated"
-                            end
-                        end
-                    end
-                else
-                    # If first trade can't be classified
-                    inferredclassification[tradeinds[j]] = ""
-                end
-            end
-        end
-        # Push the data into master dataframe
-        for i in 1:size(tempdata)[1]
-            temp = (tempdata[i,2], tempdata[i,3], tempdata[i,8], tempdata[i,9], tempdata[i,12], inferredclassification[i])
-            # temp = (tempdata[i,2], tempdata[i,3], tempdata[i,8], tempdata[i,9], tempdata[i,12], tempdata[i,10])
-            push!(master_df, temp)
-        end
-    end
-    return master_df
-end
-
-## Function to read in the A2X data, create seller- and buyer- initiated dictionaries
-# containing all the relavent price impact information for the various tickers
-function PriceImpactInfoA2X(ticker::Vector)
+function PriceImpactInfoA2X(ticker::Vector) # Read in the A2X data, create seller- and buyer- initiated dictionaries containing all the relavent price impact information for the various tickers
     # Create the relavent dictionaries
-    BuyerDict = Dict()
-    SellerDict = Dict()
-    ADVDict = Dict()
+    BuyerDict = Dict(); SellerDict = Dict(); ADVDict = Dict()
     # Read in the data
     @showprogress "Computing..." for i in 1:length(ticker)
         # Read in the data
-        data = CSV.read("Real Data/A2X/Cleaned/A2X_Cleaned_"*ticker[i]*".csv")
+        data = CSV.read("Test Data/A2X/Clean/A2X_Cleaned_"*ticker[i]*".csv")
         # Clean the A2X data and return dataframe of relavent information
         CleanedData = CleanA2X(data)
         # Extract price impact information
@@ -313,18 +295,13 @@ function PriceImpactInfoA2X(ticker::Vector)
     end
     return BuyerDict, SellerDict, ADVDict
 end
-
-## Function to read in the JSE data, create seller- and buyer- initiated dictionaries
-# containing all the relavent price impact information for the various tickers
-function PriceImpactInfoJSE(ticker::Vector)
+function PriceImpactInfoJSE(ticker::Vector) # Read in the JSE data, create seller- and buyer- initiated dictionaries containing all the relavent price impact information for the various tickers
     # Create the relavent dictionaries
-    BuyerDict = Dict()
-    SellerDict = Dict()
-    ADVDict = Dict()
+    BuyerDict = Dict(); SellerDict = Dict(); ADVDict = Dict()
     # Read in the data
     @showprogress "Computing..." for i in 1:length(ticker)
         # Read in the data
-        data = CSV.read("Real Data/JSE/Cleaned/JSECleanedTAQ"*ticker[i]*".csv")
+        data = CSV.read("Test Data/JSE/Clean/JSECleanedTAQ"*ticker[i]*".csv")
         # Extract price impact information
         Buyer = getPriceImpactInfoJSE(data, :buy)
         ADV = Buyer[2]
@@ -337,12 +314,10 @@ function PriceImpactInfoJSE(ticker::Vector)
     end
     return BuyerDict, SellerDict, ADVDict
 end
-
-## Compute and save the price impact information
 #---------------------------------------------------------------------------
 
-A2X_PriceImpact = PriceImpactInfoA2X(A2X_tickers)
-JSE_PriceImpact = PriceImpactInfoJSE(JSE_tickers)
 
-save("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld", "A2X_PriceImpact", A2X_PriceImpact)
-save("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld", "JSE_PriceImpact", JSE_PriceImpact)
+# 4. Implement price-impact extraction functions
+A2X_PriceImpact = PriceImpactInfoA2X(A2X_tickers); save("Test Data/A2X/Price Impact/A2X_PriceImpact.jld", "A2X_PriceImpact", A2X_PriceImpact)
+JSE_PriceImpact = PriceImpactInfoJSE(JSE_tickers); save("Test Data/JSE/Price Impact/JSE_PriceImpact.jld", "JSE_PriceImpact", JSE_PriceImpact)
+#---------------------------------------------------------------------------

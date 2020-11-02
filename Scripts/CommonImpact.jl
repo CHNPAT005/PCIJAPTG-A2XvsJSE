@@ -1,29 +1,23 @@
-## Author: Patrick Chang & Ivan Jerivich
-# Script file to plot the price impact master curve of the common equities
-# from JSE and A2X over the same period of 2019-01-02 to 2019-07-15.
-
+### Title: Common impact
+### Authors: Patrick Chang and Ivan Jericevich
+### Function: Plot the price impact master curve of the common equities from JSE and A2X over the same period of 2019-01-02 to 2019-07-15
+### Structure:
+# 1. Preliminaries
+# 2. Estimate γ and δ for using 3 common equities from each exchange
+# 3. Visualization
 #---------------------------------------------------------------------------
-## Preamble
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim
-using Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
 
-cd("/Users/patrickchang1/PCIJAPTG-A2XvsJSE")
 
-# Common tickers
+### 1. Preliminaries
+using CSV, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, Distributions, StatsBase
+cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
 ticker = ["SBK", "NPN", "SLM"]
-
-# Read in the data
-A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld")
-A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld")
-JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
-
-#---------------------------------------------------------------------------
-## Estimate γ and δ for each exchange
-# Note: δ = param[1]; γ = param[2]
-# δ is for scaling of volume, γ is for scaling of impact
+A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
 #---------------------------------------------------------------------------
 
+
+### 2. Estimate γ and δ for using 3 common equities from each exchange
 function getJSEerrorBuy(param; data = JSE_PriceImpact, ticker = ticker, low = -1, up = 1)
     # Extract appropriate side
     ADV = data[3]
@@ -61,7 +55,6 @@ function getJSEerrorBuy(param; data = JSE_PriceImpact, ticker = ticker, low = -1
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
 function getJSEerrorSell(param; data = JSE_PriceImpact, ticker = ticker, low = -1, up = 1)
     # Extract appropriate side
     ADV = data[3]
@@ -99,7 +92,6 @@ function getJSEerrorSell(param; data = JSE_PriceImpact, ticker = ticker, low = -
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
 function getA2XerrorBuy(param; data = A2X_PriceImpact, ticker = ticker, low = -1, up = 1)
     # Extract appropriate side
     ADV = data[3]
@@ -139,7 +131,6 @@ function getA2XerrorBuy(param; data = A2X_PriceImpact, ticker = ticker, low = -1
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
 function getA2XerrorSell(param; data = A2X_PriceImpact, ticker = ticker, low = -1, up = 1)
     # Extract appropriate side
     ADV = data[3]
@@ -179,34 +170,18 @@ function getA2XerrorSell(param; data = A2X_PriceImpact, ticker = ticker, low = -
     error = sum(xbin .+ ybin) / 20
     return error
 end
-
-JSEBuy = optimize(getJSEerrorBuy, [0.3, 0.3])
-JSEBuyParam = JSEBuy.minimizer
-
-JSESell = optimize(getJSEerrorSell, [0.3, 0.3])
-JSESellParam = JSESell.minimizer
-
-A2XBuy = optimize(getA2XerrorBuy, [0.3, 0.3])
-A2XBuyParam = A2XBuy.minimizer
-
-A2XSell = optimize(getA2XerrorSell, [0.3, 0.3])
-A2XSellParam = A2XSell.minimizer
-
-save("Computed Data/JSEParamsCommon.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
-save("Computed Data/A2XParamsCommon.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
-
-#---------------------------------------------------------------------------
-## Plot the results
+JSEBuy = optimize(getJSEerrorBuy, [0.3, 0.3]); JSEBuyParam = JSEBuy.minimizer
+JSESell = optimize(getJSEerrorSell, [0.3, 0.3]); JSESellParam = JSESell.minimizer
+A2XBuy = optimize(getA2XerrorBuy, [0.3, 0.3]); A2XBuyParam = A2XBuy.minimizer
+A2XSell = optimize(getA2XerrorSell, [0.3, 0.3]); A2XSellParam = A2XSell.minimizer
+save("Test Data/JSE/Price Impact/JSEParamsCommon.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
+save("Test Data/A2X/Price Impact/A2XParamsCommon.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
+JSEParams = load("Test Data/JSE/Price Impact/JSEParamsCommon.jld"); JSEBuyParam = JSEParams["JSEBuyParam"]; JSESellParam = JSEParams["JSESellParam"]
+A2XParams = load("Test Data/A2X/Price Impact/A2XParamsCommon.jld"); A2XBuyParam = A2XParams["A2XBuyParam"]; A2XSellParam = A2XParams["A2XSellParam"]
 #---------------------------------------------------------------------------
 
-JSEParams = load("Computed Data/JSEParamsCommon.jld")
-JSEBuyParam = JSEParams["JSEBuyParam"]
-JSESellParam = JSEParams["JSESellParam"]
-A2XParams = load("Computed Data/A2XParamsCommon.jld")
-A2XBuyParam = A2XParams["A2XBuyParam"]
-A2XSellParam = A2XParams["A2XSellParam"]
 
-## Function to construct the plotting information for re-scaled price impact
+### 3. Visualization
 function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1, up = 1)
     # Get parameters
     δ = param[1]; γ = param[2]
@@ -231,8 +206,6 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
     val_inds = setdiff(val_inds, findall(isnan,Δp))
     return ω[val_inds], Δp[val_inds]
 end
-
-## Function to construct the plotting information for price impact
 function getPriceImpact(data::DataFrame; low = -3, up = 1)
     data = data[findall(!isnan, data[:,1]),:]
     xx = 10 .^(range(low, up, length = 21))
@@ -252,8 +225,6 @@ function getPriceImpact(data::DataFrame; low = -3, up = 1)
     val_inds = setdiff(val_inds, findall(isnan,Δp))
     return ω[val_inds], Δp[val_inds]
 end
-
-## Function to plot the price impact
 function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1, up = 1)
     # Extract liquidity
     ADV = data[3]
@@ -273,8 +244,7 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         push!(Impact, i => getPriceImpact(data[i], low = low, up = up))
     end
     # Plot the values
-    plot(ImpactRescaled[ticker[1]][1], ImpactRescaled[ticker[1]][2], marker = (4, 0.8), scale = :log10, color = :blue, dpi = 300,
-    label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    plot(ImpactRescaled[ticker[1]][1], ImpactRescaled[ticker[1]][2], marker = (4, 0.8), scale = :log10, color = :blue, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
     plot!(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, :white, stroke(1, :blue)), scale = :log10, color = :blue, label = "", line = (:dot, 1))
     plot!(ImpactRescaled[ticker[2]][1], ImpactRescaled[ticker[2]][2], marker = (4, 0.8), scale = :log10, label = ticker[2], color= :red)
     plot!(Impact[ticker[2]][1], Impact[ticker[2]][2], marker = (4, :white, stroke(1, :red)), scale = :log10, color = :red, label = "", line = (:dot, 1))
@@ -289,17 +259,8 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         ylabel!(L"\Delta p^* C^{\gamma}")
     end
 end
-
-## Obtain results
-
-PlotMaster(JSE_PriceImpact, ticker, JSEBuyParam, :buy)
-# savefig("Plots/JSECommonBuy.svg")
-
-PlotMaster(JSE_PriceImpact, ticker, JSESellParam, :sell)
-# savefig("Plots/JSECommonSell.svg")
-
-PlotMaster(A2X_PriceImpact, ticker, A2XBuyParam, :buy)
-# savefig("Plots/A2XCommonBuy.svg")
-
-PlotMaster(A2X_PriceImpact, ticker, A2XSellParam, :sell)
-# savefig("Plots/A2XCommonSell.svg")
+PlotMaster(JSE_PriceImpact, ticker, JSEBuyParam, :buy); savefig("Figures/JSECommonBuy.pdf")
+PlotMaster(JSE_PriceImpact, ticker, JSESellParam, :sell); savefig("Figures/JSECommonSell.pdf")
+PlotMaster(A2X_PriceImpact, ticker, A2XBuyParam, :buy); savefig("Figures/A2XCommonBuy.pdf")
+PlotMaster(A2X_PriceImpact, ticker, A2XSellParam, :sell); savefig("Figures/A2XCommonSell.pdf")
+#---------------------------------------------------------------------------

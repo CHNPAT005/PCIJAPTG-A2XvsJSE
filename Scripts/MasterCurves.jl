@@ -11,7 +11,7 @@
 
 ### 1. Preliminaries
 using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
-cd("C:/Users/.../PCIJAPTG-A2XvsJSE"); clearconsole()
+cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE"); clearconsole()
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
 A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
 JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
@@ -205,7 +205,7 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
     end
     val_inds = setdiff(1:20, findall(iszero,Δp))
     val_inds = setdiff(val_inds, findall(isnan,Δp))
-    return ω[val_inds], Δp[val_inds], val_inds
+    return ω, Δp#ω[val_inds], Δp[val_inds], val_inds
 end
 function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1, up = 1)
     # Extract liquidity
@@ -224,8 +224,8 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         push!(Impact, i => getMasterImpact(data[i], ADV[i], param, low = low, up = up))
     end
     # Plot the values
-    plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300,
-    label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    plot!()
     for i in 2:length(ticker)
         plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i])
     end
@@ -240,9 +240,77 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
     end
 end
 PlotMaster(JSE_PriceImpact, JSE_tickers, JSEBuyParam, :buy); savefig("Figures/JSEMasterBuy.pdf")
+
 PlotMaster(JSE_PriceImpact, JSE_tickers, JSESellParam, :sell); savefig("Figures/JSEMasterSell.pdf")
 PlotMaster(A2X_PriceImpact, A2X_tickers, A2XBuyParam, :buy); savefig("Figures/A2XMasterBuy.pdf")
 PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell); savefig("Figures/A2XMasterSell.pdf")
+
+
+
+
+### Strategy:
+# - Do not filter out NaNs initially as they are handled in the getError functions after binning is done
+# - Iterate for the number of desired bootstrap samples
+# - Impact data for each of the different tickers are of different lengths so we iterate over the tickers and sample the data for each ticker
+# - Find the scaling parameters on these bootstrap samples
+# - Get master curves for each ticker using these scalings
+# - Return an array of impacts and an array of normalized volumes
+function Bootstrap(M::Int64, exchangeData::Tuple{Dict{Any,Any},Dict{Any,Any},Dict{Any,Any}}, initiated::Symbol, exchange::Symbol)
+    tickers = initiated == :Buy ? keys(exchangeData[1]) : keys(exchangeData[2]) # Extract tickers
+    volumes = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers) # Initialise matrix of price impacts with rows corresponding to bootstrap samples
+    impacts = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers)
+    p = Progress(M * ( 2 * length(tickers)))#, barglyphs = BarGlyphs('|','█', ['▁' ,'▂' ,'▃' ,'▄' ,'▅' ,'▆', '▇'],' ','|',), desc = "Computing:")
+    for m in 1:M # Number of bootstrap samples
+        if initiated == :Buy
+            data = exchangeData[1] # Extract relevant side
+            bootstrapSample = Dict() # Initialise dictionary of bootstrap samples with keys corresponding to tickers
+            for ticker in tickers
+                bootstrapIndeces = sample(1:nrow(data[ticker]), nrow(data[ticker]), replace = true) # Sample with replacement to get bootstrap sample
+                bootstrapSample[ticker] = data[ticker][bootstrapIndeces, :]
+                next!(p)
+            end
+            parameters = optimize(θ -> getJSEerrorBuy(θ; data = (bootstrapSample, exchangeData[2], exchangeData[3])), [0.3, 0.3]) |> Optim.minimizer # The second index of the data tuple is not relevant
+        else
+            return nothing
+        end
+        for ticker in tickers
+            result = getMasterImpact(bootstrapSample[ticker], exchangeData[3][ticker], parameters)
+            volumes[ticker] = hcat(volumes[ticker], result[1]); impacts[ticker] = hcat(impacts[ticker], result[2])
+            next!(p)
+        end
+    end
+    return Dict(:volumes => volumes, :impacts => impacts)
+end
+Bootstrap(2, JSE_PriceImpact, :Buy, :JSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #---------------------------------------------------------------------------
 
 

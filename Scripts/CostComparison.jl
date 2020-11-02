@@ -122,23 +122,6 @@ function getVars(data::DataFrame, type::Symbol; low = -1, up = 1)
     return ω[val_inds], Δp[val_inds], val_inds
 end
 
-function PlotDev(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, Ticker = "NPN", dataA2X = A2X_PriceImpact, low = -1, up = 1))
-    # Extract appropriate side
-    if side == :buy
-        # Buyer-Initiated
-        dataJSE = dataJSE[1]; dataA2X = dataA2X[1]
-    elseif side == :sell
-        # Seller-Initiated
-        dataJSE = dataJSE[2]; dataA2X = dataA2X[2]
-    end
-    # Get Price Impact
-    JSE = getCostandVar(dataJSE[Ticker], type, low = low, up = up)
-    A2X = getCostandVar(dataA2X[Ticker], type, low = low, up = up)
-    # Plot the results
-    plot(JSE[1], JSE[2], xerr = JSE[3], yerr = JSE[4], marker = stroke(2, :red), color = :red, scale = :log10)
-    plot!(A2X[1], A2X[2], xerr = A2X[3], yerr = A2X[4], marker = stroke(2, :blue), color = :blue, scale = :log10)
-end
-
 function Variability(type::Symbol, side::Symbol; dataJSE = JSE_PriceImpact, JSEticker = JSE_tickers, dataA2X = A2X_PriceImpact, A2Xticker = A2X_tickers, low = -1, up = 1)
     # Extract appropriate side
     if side == :buy

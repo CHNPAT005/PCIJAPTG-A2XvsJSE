@@ -171,13 +171,13 @@ function PlotBootstrap(data, M::Int, ticker::Vector, side::Symbol, cutoff::Float
         #plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = 1 .* Boots[ticker[i]][2], fillalpha = 0.2)
     #end
     colors = [:black, :red, :blue, :green, :purple, :orange, :yellow, :green3, :aqua, :deeppink]
-    plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[1]][2] .- 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = colors[1])
-    plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[1]][2] .+ 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = colors[1])
-    plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, label = ticker[1], legend = :outertopright, markercolor = colors[1], markerstrokecolor = colors[1], linecolor = colors[1])
+    plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[1]][2] .- 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1)
+    plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[1]][2] .+ 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1)
+    plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, label = ticker[1], legend = :outertopright, markercolor = 1, linecolor = 1)
     for i in 2:length(ticker)
-        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[i]][2] .- 1.96 .* Boots[ticker[i]][2], cutoff), fillalpha = 0.2, fillcolor = colors[i])
-        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[i]][2] .+ 1.96 .* Boots[ticker[i]][2], cutoff), fillalpha = 0.2, fillcolor = colors[i])
-        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], legend = :outertopright, markercolor = colors[i], markerstrokecolor = colors[i], linecolor = colors[i])
+        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[i]][2] .- 1.96 .* Boots[ticker[i]][2], cutoff), fillalpha = 0.2, fillcolor = i)
+        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[i]][2] .+ 1.96 .* Boots[ticker[i]][2], cutoff), fillalpha = 0.2, fillcolor = i)
+        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], legend = :outertopright, markercolor = i, linecolor = i)
     end
     current()
     # Add appropriate label
@@ -193,7 +193,7 @@ end
 
 
 ### 3. Visualization
-PlotBootstrap(JSE_PriceImpact, 100, JSE_tickers, :buy, 10^(-6))
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, :buy, 10^(-6))
 savefig("Figures/JSEImpactBuy.svg")
 
 PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, :sell, 10^(-6))

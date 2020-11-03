@@ -200,8 +200,10 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
         indofnan = findall(!isnan, impacts)
         impacts = impacts[indofnan]
         normvol = normvol[indofnan]
-        push!(Δp, mean(impacts) * (ADV^γ))
-        push!(ω, mean(normvol) / (ADV^δ))
+        # push!(Δp, mean(impacts) * (ADV^γ))
+        # push!(ω, mean(normvol) / (ADV^δ))
+        push!(Δp, mean(impacts))
+        push!(ω, mean(normvol))
     end
     val_inds = setdiff(1:20, findall(iszero,Δp))
     val_inds = setdiff(val_inds, findall(isnan,Δp))
@@ -227,8 +229,10 @@ function getBootImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1, u
         indofnan = findall(!isnan, impacts)
         impacts = impacts[indofnan]
         normvol = normvol[indofnan]
-        push!(Δp, mean(impacts) * (ADV^γ))
-        push!(ω, mean(normvol) / (ADV^δ))
+        # push!(Δp, mean(impacts) * (ADV^γ))
+        # push!(ω, mean(normvol) / (ADV^δ))
+        push!(Δp, mean(impacts))
+        push!(ω, mean(normvol))
     end
     val_inds = setdiff(1:20, findall(iszero,Δp))
     val_inds = setdiff(val_inds, findall(isnan,Δp))
@@ -266,28 +270,51 @@ function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol
             tempmasterω[j, Impact[ticker[j]][3], i] = Impact[ticker[j]][1]
         end
     end
-    #return tempmasterΔp
-    lower = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
-    average = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
-    upper = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
+    # return tempmasterΔp
+    Boots = Dict()
     for j in 1:size(tempmasterΔp, 1)
+        temp = []
+        tempMean = []; tempStd = []
         for k in 1:size(tempmasterΔp, 2)
             # Get the non-nan indeces on the third dimension (all the bootstrap samples for a security and volume bin)
             nonnanindeces = findall(!isnan, tempmasterΔp[j, k, :])
-            average[j, k] = mean(tempmasterΔp[j, k, nonnanindeces])
-            lower[j, k] = average[j, k] - 1 * std(tempmasterΔp[j, k, nonnanindeces])
-            upper[j, k] = average[j, k] + 1 * std(tempmasterΔp[j, k, nonnanindeces])
+            ave = mean(tempmasterΔp[j, k, nonnanindeces])
+            dev = std(tempmasterΔp[j, k, nonnanindeces])
+            if !isnan(ave) && !isnan(dev)
+                push!(tempMean, ave)
+                push!(tempStd, dev)
+            end
+
         end
+        push!(temp, tempMean); push!(temp, tempStd)
+        push!(Boots, ticker[j] => temp)
     end
-    return average
+    # return Boots
+    # lower = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
+    # average = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
+    # upper = fill(NaN, size(tempmasterΔp, 1), size(tempmasterΔp, 2))
+    # for j in 1:size(tempmasterΔp, 1)
+    #     for k in 1:size(tempmasterΔp, 2)
+    #         # Get the non-nan indeces on the third dimension (all the bootstrap samples for a security and volume bin)
+    #         nonnanindeces = findall(!isnan, tempmasterΔp[j, k, :])
+    #         average[j, k] = mean(tempmasterΔp[j, k, nonnanindeces])
+    #         lower[j, k] = average[j, k] - 1 * std(tempmasterΔp[j, k, nonnanindeces])
+    #         upper[j, k] = average[j, k] + 1 * std(tempmasterΔp[j, k, nonnanindeces])
+    #     end
+    # end
+    # return average
     # Plot the values
     #plot(realImpact[ticker[1]][1][1:(end - 1)], realImpact[ticker[1]][2][1:(end - 1)], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), ribbon = (abs.(lower[1, 1:(end - 1)]), abs.(upper[1, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
     #for i in 2:length(ticker)
         #plot!(realImpact[ticker[i]][1][1:(end - 1)], realImpact[ticker[i]][2][1:(end - 1)], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = (abs.(lower[i, 1:(end - 1)]), abs.(upper[i, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
     #end
-    plot(realImpact[ticker[1]][1][1:(end - 1)], average[1, 1:(end - 1)], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), ribbon = (abs.(lower[1, 1:(end - 1)]), abs.(upper[1, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
+    # plot(realImpact[ticker[1]][1][1:(end - 1)], average[1, 1:(end - 1)], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), ribbon = (abs.(lower[1, 1:(end - 1)]), abs.(upper[1, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
+    # for i in 2:length(ticker)
+    #     plot!(realImpact[ticker[i]][1][1:(end - 1)], average[i, 1:(end - 1)], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = (abs.(lower[i, 1:(end - 1)]), abs.(upper[i, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
+    # end
+    plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), ribbon = 1 .* Boots[ticker[1]][2], fillalpha = 0.2)#, fillcolor = :red)
     for i in 2:length(ticker)
-        plot!(realImpact[ticker[i]][1][1:(end - 1)], average[i, 1:(end - 1)], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = (abs.(lower[i, 1:(end - 1)]), abs.(upper[i, 1:(end - 1)])), fillcolor = :red, fillalpha = 0.1)
+        plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = 1 .* Boots[ticker[i]][2], fillalpha = 0.2)#, fillcolor = :red)
     end
     current()
     # Add appropriate label
@@ -299,6 +326,13 @@ function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol
         ylabel!(L"\Delta p^* C^{\gamma}")
     end
 end
-PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSEBuyParam, :buy, :blue)
-PlotBootstrap(A2X_PriceImpact, 10000, A2X_tickers, A2XBuyParam, :buy, :blue)
+
+PlotBootstrap(JSE_PriceImpact, 10, JSE_tickers, JSEBuyParam, :buy, :blue)
+
+PlotBootstrap(JSE_PriceImpact, 10, JSE_tickers, JSESellParam, :sell, :blue)
+
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XBuyParam, :buy, :blue)
+
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XSellParam, :sell, :blue)
+
 #---------------------------------------------------------------------------

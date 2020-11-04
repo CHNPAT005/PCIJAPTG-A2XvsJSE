@@ -44,6 +44,6 @@ Packages can be installed using
 ```julia
 Pkg.add("...")
 ```
-The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the [Test Data](Test Data/.DS_Store) folder. The Computed data folder contains pre-computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange can be found in the Test Data folder.
+The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the [Test Data](./Test Data/.DS_Store) folder. The Computed data folder contains pre-computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange can be found in the Test Data folder.
 
 Data cleaning scripts have been run already to produce the cleaned test datasets. All other figures and `.jld` files correspond to that in the paper and were obtained from the implementation on the full datasets.

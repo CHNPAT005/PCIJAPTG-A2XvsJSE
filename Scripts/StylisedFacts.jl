@@ -143,4 +143,12 @@ density!(densityReturns, NPNA2XMicroReturns, label = "A2X", color = :blue, xlabe
 qqplot!(densityReturns, Normal, NPNJSEMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{JSE - Normal QQ-plot}", markersize = 3, markercolor = :red, markerstrokecolor = :red, linecolor = :black, inset = (1, bbox(0.62, 0.1, 0.33, 0.33, :top)), subplot = 2, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
 qqplot!(densityReturns, Normal, NPNA2XMicroReturns, xlabel = L"\textrm{Theoretical Quantiles}", ylabel = L"\textrm{Sample Quantiles}", title = L"\textrm{A2X - Normal QQ-plot}", markersize = 3, markercolor = :blue, markerstrokecolor = :blue, linecolor = :black, inset = (1, bbox(0.1, 0.1, 0.33, 0.33, :top)), subplot = 3, legend = :none, titlefontsize = 7, guidefontsize = 7, tickfont = 5)
 savefig(densityReturns, string("Figures/TickReturnsDistribution.png"))
+# 3. Micro-price return auto-correlation
+lags = 100
+A2X_Rets_ACF = plot(1:lags, autocor(convert.(Float64, NPNA2XMicroReturns), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
+hline!(A2X_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = "")
+hline!(A2X_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(NPNA2XMicroReturns))], color = :blue, label = ""); savefig(A2X_Rets_ACF, "Figures/A2X_Rets_ACF.pdf")
+JSE_Rets_ACF = plot(1:lags, autocor(convert.(Float64, NPNJSEMicroReturns), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
+hline!(JSE_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(NPNJSEMicroReturns))], color = :red, label = "")
+hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(NPNJSEMicroReturns))], color = :red, label = ""); savefig(JSE_Rets_ACF, "Figures/JSE_Rets_ACF.pdf")
 #---------------------------------------------------------------------------

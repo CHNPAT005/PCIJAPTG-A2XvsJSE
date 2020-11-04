@@ -4,7 +4,6 @@
 ### Structure:
 # 1. Preliminaries
 # 2. Order-flow auto-correlation
-# 3. Micro-price return auto-correlation
 #---------------------------------------------------------------------------
 
 
@@ -111,52 +110,4 @@ JSE_OF = plot(1:lags, autocor(JSEOrderFlow, 1:lags), seriestype = :sticks, xlabe
 hline!(JSE_OF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
 hline!(JSE_OF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSEOrderFlow))], color = :red)
 plot!(JSE_OF, 1:lags, autocor(JSEOrderFlow, 1:lags), xscale = :log10, inset = (1, bbox(0.58,0.0,0.4,0.4)), subplot = 2, label = "", xlabel = L"\textrm{Lag} (\log_{10})", ylabel = L"\textrm{ACF}", guidefontsize = 8, color = :black); savefig(JSE_OF, "Figures/JSE_OF.pdf")
-#---------------------------------------------------------------------------
-
-
-### 3. Micro-price return auto-correlation
-function getA2XReturns(data::DataFrame) # Extract the micro-price returns from A2X
-    # Initialise returns
-    returns = String[]
-    # Split the data into individual days
-    dates = Date.(data[:,2])
-    dates_unique = unique(dates)
-    dates_unique = filter(x -> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
-    @showprogress "Computing..." for i in 1:length(dates_unique)
-        # Create extract data from each day
-        tempday = dates_unique[i]
-        tempdata = data[findall(x -> x == tempday, dates), :]
-        # Extract the micro-prices
-        MP = tempdata[:,11]
-        # Compute and append returns
-        returns = [returns; diff(log.(filter(!isnan, MP)))]
-    end
-    return returns
-end
-function getJSEReturns(data::DataFrame) # Extract the micro-price returns from JSE
-    # Initialise returns
-    returns = String[]
-    # Split the data into individual days
-    dates = Date.(data[:,1])
-    dates_unique = unique(dates)
-    dates_unique = filter(x -> x >= Date("2019-01-01") && x <= Date("2019-07-15"), dates_unique)
-    @showprogress "Computing..." for i in 1:length(dates_unique)
-        # Create extract data from each day
-        tempday = dates_unique[i]
-        tempdata = data[findall(x -> x == tempday, dates), :]
-        # Extract the micro-prices
-        MP = tempdata[:,9]
-        # Compute and append returns
-        returns = [returns; diff(log.(filter(!isnan, MP)))]
-    end
-    return returns
-end
-A2XRets = getA2XReturns(A2X); JSERets = getJSEReturns(JSE) # Compute the micro-price returns
-lags = 100
-A2X_Rets_ACF = plot(1:lags, autocor(convert.(Float64, A2XRets), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
-hline!(A2X_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(A2XRets))], color = :blue, label = "")
-hline!(A2X_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(A2XRets))], color = :blue, label = ""); savefig(A2X_Rets_ACF, "Figures/A2X_Rets_ACF.pdf")
-JSE_Rets_ACF = plot(1:lags, autocor(convert.(Float64, JSERets), 1:lags), seriestype = :sticks, xlabel = L"\textrm{Lag}", ylabel = L"\textrm{ACF}", dpi = 300, color = :black, label = "")
-hline!(JSE_Rets_ACF, [quantile(Normal(), (1+0.95)/2) / sqrt(length(JSERets))], color = :red, label = "")
-hline!(JSE_Rets_ACF, [quantile(Normal(), (1-0.95)/2) / sqrt(length(JSERets))], color = :red, label = ""); savefig(JSE_Rets_ACF, "Figures/JSE_Rets_ACF.pdf")
 #---------------------------------------------------------------------------

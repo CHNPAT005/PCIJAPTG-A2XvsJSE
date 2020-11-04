@@ -10,11 +10,13 @@
 
 
 ### 1. Preliminaries
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase
+using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase, Pipe
 cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE"); clearconsole()
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+# A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+# JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
 #---------------------------------------------------------------------------
 
 
@@ -175,14 +177,14 @@ JSEBuy = optimize(getJSEerrorBuy, [0.3, 0.3]); JSEBuyParam = JSEBuy.minimizer
 JSESell = optimize(getJSEerrorSell, [0.3, 0.3]); JSESellParam = JSESell.minimizer
 A2XBuy = optimize(getA2XerrorBuy, [0.3, 0.3]); A2XBuyParam = A2XBuy.minimizer
 A2XSell = optimize(getA2XerrorSell, [0.3, 0.3]); A2XSellParam = A2XSell.minimizer
-save("Test Data/JSE/Price Impact/JSEParams.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
-save("Test Data/A2X/Price Impact/A2XParams.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
-JSEParams = load("Test Data/JSE/Price Impact/JSEParams.jld"); JSEBuyParam = JSEParams["JSEBuyParam"]; JSESellParam = JSEParams["JSESellParam"]
-A2XParams = load("Test Data/A2X/Price Impact/A2XParams.jld"); A2XBuyParam = A2XParams["A2XBuyParam"]; A2XSellParam = A2XParams["A2XSellParam"]
+save("Computed Data/JSEParams.jld", "JSEBuyParam", JSEBuyParam, "JSESellParam", JSESellParam)
+save("Computed Data/A2XParams.jld", "A2XBuyParam", A2XBuyParam, "A2XSellParam", A2XSellParam)
+JSEParams = load("Computed Data/JSEParams.jld"); JSEBuyParam = JSEParams["JSEBuyParam"]; JSESellParam = JSEParams["JSESellParam"]
+A2XParams = load("Computed Data/A2XParams.jld"); A2XBuyParam = A2XParams["A2XBuyParam"]; A2XSellParam = A2XParams["A2XSellParam"]
 #---------------------------------------------------------------------------
 
-
 ### 3. Visualization
+# Using only raw data
 function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1, up = 1)
     # Get parameters
     δ = param[1]; γ = param[2]
@@ -205,7 +207,7 @@ function getMasterImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1,
     end
     val_inds = setdiff(1:20, findall(iszero,Δp))
     val_inds = setdiff(val_inds, findall(isnan,Δp))
-    return ω, Δp#ω[val_inds], Δp[val_inds], val_inds
+    return ω[val_inds], Δp[val_inds], val_inds
 end
 function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1, up = 1)
     # Extract liquidity
@@ -224,9 +226,9 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         push!(Impact, i => getMasterImpact(data[i], ADV[i], param, low = low, up = up))
     end
     # Plot the values
-    plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
-    plot!()
-    for i in 2:length(ticker)
+    # plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    # plot!()
+    for i in 1:length(ticker)
         plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i])
     end
     current()
@@ -239,160 +241,95 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         ylabel!(L"\Delta p^* C^{\gamma}")
     end
 end
-PlotMaster(JSE_PriceImpact, JSE_tickers, JSEBuyParam, :buy); savefig("Figures/JSEMasterBuy.pdf")
 
-PlotMaster(JSE_PriceImpact, JSE_tickers, JSESellParam, :sell); savefig("Figures/JSEMasterSell.pdf")
-PlotMaster(A2X_PriceImpact, A2X_tickers, A2XBuyParam, :buy); savefig("Figures/A2XMasterBuy.pdf")
-PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell); savefig("Figures/A2XMasterSell.pdf")
-
-
-
-
-### Strategy:
-# - Do not filter out NaNs initially as they are handled in the getError functions after binning is done
-# - Iterate for the number of desired bootstrap samples
-# - Impact data for each of the different tickers are of different lengths so we iterate over the tickers and sample the data for each ticker
-# - Find the scaling parameters on these bootstrap samples
-# - Get master curves for each ticker using these scalings
-# - Return an array of impacts and an array of normalized volumes
-function Bootstrap(M::Int64, exchangeData::Tuple{Dict{Any,Any},Dict{Any,Any},Dict{Any,Any}}, initiated::Symbol, exchange::Symbol)
-    parameters = load("Test Data/JSE/Price Impact/JSEParams.jld")["JSEBuyParam"]
-    tickers = initiated == :Buy ? keys(exchangeData[1]) : keys(exchangeData[2]) # Extract tickers
-    volumes = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers) # Initialise matrix of price impacts with rows corresponding to bootstrap samples
-    impacts = Dict(ticker => hcat(fill(0.0, 20)) for ticker in tickers)
-    @showprogress "Computing:" for m in 1:M # Number of bootstrap samples
-        if initiated == :Buy
-            data = exchangeData[1] # Extract relevant side
-            bootstrapSample = Dict() # Initialise dictionary of bootstrap samples with keys corresponding to tickers
-            for ticker in tickers
-                bootstrapIndeces = sample(1:nrow(data[ticker]), nrow(data[ticker]), replace = true) # Sample with replacement to get bootstrap sample
-                bootstrapSample[ticker] = data[ticker][bootstrapIndeces, :]
-            end
-        else
-            return nothing
-        end
-        for ticker in tickers
-            result = getMasterImpact(bootstrapSample[ticker], exchangeData[3][ticker], parameters)
-            volumes[ticker] = hcat(volumes[ticker], result[1]); impacts[ticker] = hcat(impacts[ticker], result[2])
-        end
+# Bootstrapping raw data
+function getBootImpact(data::DataFrame, ADV::Float64, param::Vector; low = -1, up = 1)
+    # Get parameters
+    δ = param[1]; γ = param[2]
+    data = data[findall(!isnan, data[:,1]),:]
+    N = size(data, 1)
+    bootsamples = sample(1:N, N, replace = true)
+    data = data[bootsamples,:]
+    xx = 10 .^(range(low, up, length = 21))
+    Δp = []
+    ω = []
+    for i in 2:length(xx)
+        # Find indicies for appropriate bin
+        ind = findall(x-> x>xx[i-1] && x<=xx[i], data[:,2])
+        # Extract ω and Δp
+        impacts = data[ind,1]
+        normvol = data[ind,2]
+        # Remove any NaNs
+        indofnan = findall(!isnan, impacts)
+        impacts = impacts[indofnan]
+        normvol = normvol[indofnan]
+        push!(Δp, mean(impacts) * (ADV^γ))
+        push!(ω, mean(normvol) / (ADV^δ))
     end
-    return Dict(:volumes => volumes, :impacts => impacts)
+    val_inds = setdiff(1:20, findall(iszero,Δp))
+    val_inds = setdiff(val_inds, findall(isnan,Δp))
+    return ω[val_inds], Δp[val_inds], val_inds
 end
-Bootstrap(2, JSE_PriceImpact, :Buy, :JSE)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#---------------------------------------------------------------------------
-
-
-### 4. Compare the master curves from the exchanges
-function PlotCompare(p, side::Symbol, paramJSE::Vector, paramA2X::Vector; dataJSE = JSE_PriceImpact, dataA2X = A2X_PriceImpact, tickerJSE = JSE_tickers, tickerA2X = A2X_tickers, low = -1, up = 1) # Plot the Master impact from each exchange together
+function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol, col::Symbol; low = -1, up = 1)
     # Extract liquidity
-    ADVJSE = dataJSE[3]
-    ADVA2X = dataA2X[3]
+    ADV = data[3]
     # Extract appropriate side
     if side == :buy
         # Buyer-Initiated
-        dataJSE = dataJSE[1]
-        dataA2X = dataA2X[1]
+        data = data[1]
     elseif side == :sell
         # Seller-Initiated
-        dataJSE = dataJSE[2]
-        dataA2X = dataA2X[2]
+        data = data[2]
     end
-    # Get Scaled impact from JSE
-    JSEΔp = fill(NaN, 20, 10)
-    JSEω = fill(NaN, 20, 10)
-    for i in 1:length(tickerJSE)
-        temp = getMasterImpact(dataJSE[tickerJSE[i]], ADVJSE[tickerJSE[i]], paramJSE, low = low, up = up)
-        inds = temp[3]
-        JSEΔp[inds, i] = temp[2]
-        JSEω[inds, i] = temp[1]
+    # Initialize bootstrap master curves
+    masterscurvesΔp = fill(NaN, M, 20)
+    masterscurvesω = fill(NaN, M, 20)
+    # Loop through the M bootstraps
+    @showprogress "Computing:" for i in 1:M
+        # Get Price Impact
+        Impact = Dict()
+        for j in ticker
+            push!(Impact, j => getBootImpact(data[j], ADV[j], param, low = low, up = up))
+        end
+        # Initialize re-scaled impact for the bootstrap iteration
+        tempmasterΔp = fill(NaN, 10, 20)
+        tempmasterω = fill(NaN, 10, 20)
+        # Populate the re-scaled impact for the bootstrap iteration
+        for j in 1:length(ticker)
+            tempmasterΔp[j, Impact[ticker[j]][3]] = Impact[ticker[j]][2]
+            tempmasterω[j, Impact[ticker[j]][3]] = Impact[ticker[j]][1]
+        end
+        # Populate the bootstrap master curves
+        for j in 1:20
+            masterscurvesΔp[i,j] = @pipe tempmasterΔp[:,j] |> filter(!isnan,_) |> mean
+            masterscurvesω[i,j] = @pipe tempmasterω[:,j] |> filter(!isnan,_) |> mean
+        end
     end
-    # Get Scaled impact from A2X
-    A2XΔp = fill(NaN, 20, 10)
-    A2Xω = fill(NaN, 20, 10)
-    scalingParameter = side == :sell ? 9000 : 1
-    for i in 1:length(tickerA2X)
-        temp = getMasterImpact(dataA2X[tickerA2X[i]], ADVA2X[tickerA2X[i]], paramA2X, low = low, up = up)
-        inds = temp[3]
-        z = temp[2] ./ scalingParameter
-        A2XΔp[inds, i] = z
-        A2Xω[inds, i] = temp[1]
-    end
-    # Get the mean and std
-    collapsedJSEω = mean(JSEω,dims=2)
-    collapsedJSEΔp = mean(JSEΔp,dims=2)
-    varJSEΔp = std(JSEΔp,dims=2)
-    collapsedA2Xω = fill(0.0, 20, 1)
-    collapsedA2XΔp = fill(0.0, 20, 1)
-    varA2XΔp = fill(0.0, 20, 1)
-    for i in 1:20
-        collapsedA2Xω[i] = mean(filter(!isnan, A2Xω[i,:]))
-        tempΔp = filter(!isnan, A2XΔp[i,:])
-        collapsedA2XΔp[i] = mean(tempΔp)# / 10000
-        varA2XΔp[i] = std(tempΔp)# / 10000
-    end
-    # Get the quantiles
-    A2Xerlow = fill(0.0, 20, 1)
-    A2Xerup = fill(0.0, 20, 1)
-    JSEerlow = zeros(20, 1)
-    JSEerup = zeros(20, 1)
-    for i in 1:20
-        A2XtempΔp = sort(filter(!isnan, A2XΔp[i,:]))
-        n = length(A2XtempΔp)
-        #A2Xerlow[i] = A2XtempΔp[Int(ceil(n*0.25))]
-        #A2Xerup[i] = A2XtempΔp[Int(ceil(n*0.75))]
-        A2Xerlow[i] = quantile(A2XtempΔp, 0.05)
-        A2Xerup[i] = quantile(A2XtempΔp, 0.95)
-        JSEtempΔp = sort(filter(!isnan, JSEΔp[i,:]))
-        #JSEerlow[i] = JSEtempΔp[Int(ceil(n*0.25))]
-        #JSEerup[i] = JSEtempΔp[Int(ceil(n*0.75))]
-        JSEerlow[i] = quantile(JSEtempΔp, 0.05)
-        JSEerup[i] = quantile(JSEtempΔp, 0.95)
-    end
-    q = quantile(TDist(10-1), 0.975)
+    # Plot the values
+    plot(mean(masterscurvesω, dims=1)', mean(masterscurvesΔp, dims=1)', ribbon = 1.96 .* std(masterscurvesΔp, dims=1)', color = col, fillalpha = 0.3, scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    # Add appropriate label
     if side == :buy
-        plot!(p, collapsedJSEω, collapsedJSEΔp, ribbon = (collapsedJSEΔp .- JSEerlow, JSEerup .- collapsedJSEΔp), fillalpha=.3, scale = :log10, color = :red, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
-        plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Buyer}", seriestype = :scatter)
-        plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (collapsedA2XΔp .- A2Xerlow, A2Xerup .- collapsedA2XΔp), fillalpha=.3, scale = :log10, color = :blue, label = "")
-        plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Buyer}", seriestype = :scatter)
-        xlabel!(L"\overline{\omega^* / C^{\delta}}")
-        ylabel!(p, L"\overline{\Delta p^* C^{\gamma}} \kappa")
+        xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
+        ylabel!(L"\Delta p^* C^{\gamma}")
     elseif side == :sell
-        plot!(p, collapsedJSEω, collapsedJSEΔp, ribbon = (max.(0, collapsedJSEΔp .- JSEerlow), max.(0, JSEerup .- collapsedJSEΔp)), fillalpha=.3, scale = :log10, color = :red, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), dpi = 300)
-        plot!(p, collapsedJSEω, collapsedJSEΔp, scale = :log10, color = :red, label = L"\textrm{JSE Seller}", seriestype = :scatter, markershape = :utriangle)
-        plot!(collapsedA2Xω, collapsedA2XΔp, ribbon = (max.(0, collapsedA2XΔp .- A2Xerlow), max.(0, A2Xerup .- collapsedA2XΔp)), fillalpha=.3, color = :blue, label = "", scale = :log10) #
-        plot!(p, collapsedA2Xω, collapsedA2XΔp, scale = :log10, color = :blue, label = L"\textrm{A2X Seller}", seriestype = :scatter, markershape = :utriangle)
-        xlabel!(p, L"\overline{\omega^* / C^{\delta}}")
-        ylabel!(p, L"\overline{\Delta p^* C^{\gamma}} \kappa")
+        xlabel!(L"\textrm{Seller-Initiated: } \omega^* / C^{\delta}")
+        ylabel!(L"\Delta p^* C^{\gamma}")
     end
 end
-p = plot(dpi = 300); PlotCompare(p, :buy, JSEBuyParam, A2XBuyParam); PlotCompare(p, :sell, JSESellParam, A2XSellParam); savefig("Figures/MasterCurves.pdf")
-#---------------------------------------------------------------------------
+
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XBuyParam, :buy, :blue)
+PlotMaster(A2X_PriceImpact, A2X_tickers, A2XBuyParam, :buy)
+savefig("Figures/A2XMasterBuy.svg")
+
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XSellParam, :sell, :blue)
+PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell)
+savefig("Figures/A2XMasterSell.svg")
+
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSEBuyParam, :buy, :red)
+PlotMaster(JSE_PriceImpact, JSE_tickers, JSEBuyParam, :buy)
+savefig("Figures/JSEMasterBuy.svg")
+
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSESellParam, :sell, :red)
+PlotMaster(JSE_PriceImpact, JSE_tickers, JSESellParam, :sell)
+savefig("Figures/JSEMasterSell.svg")

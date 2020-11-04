@@ -18,57 +18,6 @@ JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_Pr
 
 
 ### 2. Compute price impact curves
-# function getPriceImpact(data::DataFrame; low = -3, up = 1) # Function to construct the plotting information for impact
-#     data = data[findall(!isnan, data[:,1]),:]
-#     xx = 10 .^(range(low, up, length = 21))
-#     Δp = []
-#     ω = []
-#     for i in 2:length(xx)
-#         ind = findall(x-> x>xx[i-1] && x<=xx[i], data[:,2])
-#         impacts = data[ind,1]
-#         normvol = data[ind,2]
-#         indofnan = findall(!isnan, impacts)
-#         impacts = impacts[indofnan]
-#         normvol = normvol[indofnan]
-#         push!(Δp, mean(impacts))
-#         push!(ω, mean(normvol))
-#     end
-#     val_inds = setdiff(1:length(Δp), findall(iszero,Δp))
-#     val_inds = setdiff(val_inds, findall(isnan,Δp))
-#     return ω[val_inds], Δp[val_inds]
-# end
-# function PlotImpact(data, ticker::Vector, side::Symbol; low = -3, up = 1)
-#     # Extract appropriate side
-#     if side == :buy
-#         # Buyer-Initiated
-#         data = data[1]
-#     elseif side == :sell
-#         # Seller-Initiated
-#         data = data[2]
-#     end
-#     # Get Price Impact
-#     Impact = Dict()
-#     for i in ticker
-#         push!(Impact, i => getPriceImpact(data[i], low = low, up = up))
-#     end
-#     # Plot the values
-#     plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300,
-#     label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
-#     for i in 2:length(ticker)
-#         plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i])
-#     end
-#     current()
-#     # Add appropriate label
-#     if side == :buy
-#         xlabel!(L"\textrm{Buyer-Initiated: } \omega^*")
-#         ylabel!(L"\Delta p^*")
-#     elseif side == :sell
-#         xlabel!(L"\textrm{Seller-Initiated: } \omega^*")
-#         ylabel!(L"\Delta p^*")
-#     end
-# end
-
-
 function getPriceImpact(data::DataFrame; low = -3, up = 1)
     data = data[findall(!isnan, data[:,1]),:]
     xx = 10 .^(range(low, up, length = 21))
@@ -166,10 +115,6 @@ function PlotBootstrap(data, M::Int, ticker::Vector, side::Symbol, cutoff::Float
         push!(Boots, ticker[j] => temp)
     end
     # Plot the values
-    #plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), ribbon = 1 .* Boots[ticker[1]][2], fillalpha = 0.2)
-    #for i in 2:length(ticker)
-        #plot!(realImpact[ticker[i]][1], realImpact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], ribbon = 1 .* Boots[ticker[i]][2], fillalpha = 0.2)
-    #end
     plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[1]][2] .- 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1)
     plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[1]][2] .+ 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1)
     plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, label = ticker[1], legend = :outertopright, markercolor = 1, linecolor = 1)
@@ -203,9 +148,4 @@ savefig("Figures/A2XImpactBuy.svg")
 
 PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, :sell, 10^(-5))
 savefig("Figures/A2XImpactSell.svg")
-
-# PlotImpact(JSE_PriceImpact, JSE_tickers, :buy, low = -3, up = 1); savefig("Figures/JSEImpactBuy.pdf")
-# PlotImpact(JSE_PriceImpact, JSE_tickers, :sell, low = -3, up = 1); savefig("Figures/JSEImpactSell.pdf")
-# PlotImpact(A2X_PriceImpact, A2X_tickers, :buy, low = -3, up = 1); savefig("Figures/A2XImpactBuy.pdf")
-# PlotImpact(A2X_PriceImpact, A2X_tickers, :sell, low = -3, up = 1); savefig("Figures/A2XImpactSell.pdf")
 #---------------------------------------------------------------------------

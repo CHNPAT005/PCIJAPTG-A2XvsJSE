@@ -29,7 +29,7 @@ This repository details the implementation of an exploratory data analysis of th
 ## Prerequisites
 * [Julia](http://movielens.org) programming langauge
 * A text editor or IDE such as [Atom](https://flight-manual.atom.io/getting-started/sections/installing-atom/), [VS Code](https://code.visualstudio.com/download) or [Jupyter](https://jupyter.org/install)
-* The test data sets accompanied herewith which can also be found at <https://figshare.com/s/eec9a8094c3e0f7d2b1b>
+* The test data to be used for the replication of results and algorithm validation can be found at <https://figshare.com/s/eec9a8094c3e0f7d2b1b>
 
 ## Usage
 Clone the repository
@@ -44,6 +44,4 @@ Packages can be installed using
 ```julia
 Pkg.add("...")
 ```
-The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the [hd](Test Data/.DS_Store) folder. The Computed data folder contains pre-computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange can be found in the Test Data folder.
-
-Data cleaning scripts have been run already to produce the cleaned test datasets. All other figures and `.jld` files correspond to that in the paper and were obtained from the implementation on the full datasets.
+The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the Test Data folder. The Computed data folder is in place to hold computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange will be saved to the Test Data folder (upon implementation). All figures contained within the Figures folder correspond to those in the paper and were obtained from the implementation on the full data sets. Data cleaning scripts should be run first before any of the julia files in the Scripts folder can be run.

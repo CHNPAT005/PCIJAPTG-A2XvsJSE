@@ -9,7 +9,7 @@
 * Tim Gebbie
 
 ## Description
-This repository details the implementation of an exploratory data analysis of the South African market microstructure. Specifically, it considers shared listings on two South African equity exchanges: the Johannesburg Stock Exchange and the A2X exchange.
+This repository details the implementation of an exploratory data analysis of the South African market microstructure. Specifically, it considers shared listings on two South African equity exchanges: the Johannesburg Stock Exchange and the A2X exchange. The related paper explores an empircal comparisons of markets trading similar shares, in a similar regulatory and economic environment, but with vastly different liquidity, cost and business models. We compare the distributions and auto-correlations of returns on different time scales, we compare price impact and master curves, and we compare the cost of trading on each exchange.
 
 |A2X                     |                 |JSE                         |                 |
 |------------------------|-----------------|----------------------------|-----------------|

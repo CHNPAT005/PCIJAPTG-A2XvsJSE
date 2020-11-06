@@ -229,7 +229,7 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
     # plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
     # plot!()
     for i in 1:length(ticker)
-        plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i])
+        plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], palette = ColorSchemes.Dark2_5.colors)
     end
     current()
     # Add appropriate label
@@ -307,7 +307,7 @@ function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol
         end
     end
     # Plot the values
-    plot(mean(masterscurvesω, dims=1)', mean(masterscurvesΔp, dims=1)', ribbon = 1.96 .* std(masterscurvesΔp, dims=1)', color = col, fillalpha = 0.3, scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    plot(mean(masterscurvesω, dims=1)', mean(masterscurvesΔp, dims=1)', ribbon = 1.96 .* std(masterscurvesΔp, dims=1)', color = col, fillalpha = 0.3, scale = :log10, dpi = 300, label = "Average", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
     # Add appropriate label
     if side == :buy
         xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")

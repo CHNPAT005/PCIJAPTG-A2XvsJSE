@@ -29,7 +29,7 @@ This repository details the implementation of an exploratory data analysis of th
 ## Prerequisites
 * [Julia](http://movielens.org) programming langauge
 * A text editor or IDE such as [Atom](https://flight-manual.atom.io/getting-started/sections/installing-atom/), [VS Code](https://code.visualstudio.com/download) or [Jupyter](https://jupyter.org/install)
-* The test data to be used for the replication of results and algorithm validation can be found at <https://figshare.com/s/eec9a8094c3e0f7d2b1b>
+* The test data to be used for the replication of results and algorithm validation can be found at [ZivaHub](https://figshare.com/articles/dataset/_/13187591)
 
 ## Usage
 Clone the repository
@@ -44,4 +44,4 @@ Packages can be installed using
 ```julia
 Pkg.add("...")
 ```
-The datasets used to produce all figures from both exchanges is for the period 2019-01-01 - 2019-07-15. This data is proprietary and is thus not included here. For the purpose of replication and proof of concept, we include the last week of data from both exchanges (2019-07-8 - 2019-07-12) in the Test Data folder. The Computed data folder is in place to hold computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange will be saved to the Test Data folder (upon implementation). All figures contained within the Figures folder correspond to those in the paper and were obtained from the implementation on the full data sets. Data cleaning scripts should be run first before any of the julia files in the Scripts folder can be run.
+The datasets used for the paper is for the period between 2019-01-02 to 2019-07-15. The data is proprietary and is not included here. For the purpose of algorithm verification we include the last week of data from both exchanges (2019-07-8 - 2019-07-12). The data for this can be downloaded [here](https://figshare.com/articles/dataset/_/13187591). There should be 5 A2X files and 10 JSE files. These should be placed in `Test Data/A2X/Raw/` and `Test Data/JSE/Raw/` respectively. The Computed data folder is in place to hold computed results (`.jld` files) that apply to both exchanges. All other data specific to each exchange will be saved to the Test Data folder (upon implementation). All figures contained within the Figures folder correspond to those in the paper and were obtained from the implementation on the full data sets. Data cleaning scripts should be run first before any of the Julia files in the Scripts folder can be run.

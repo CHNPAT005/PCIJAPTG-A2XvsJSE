@@ -27,7 +27,7 @@ This repository details the implementation of an exploratory data analysis of th
 
 
 ## Prerequisites
-* [Julia](http://movielens.org) programming langauge
+* [Julia](https://julialang.org) programming langauge
 * A text editor or IDE such as [Atom](https://flight-manual.atom.io/getting-started/sections/installing-atom/), [VS Code](https://code.visualstudio.com/download) or [Jupyter](https://jupyter.org/install)
 * The test data to be used for the replication of results and algorithm validation can be found at [ZivaHub](https://figshare.com/articles/dataset/_/13187591)
 

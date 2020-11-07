@@ -1,4 +1,4 @@
-# PCIJAPTG-A2XvsJSE
+# Comparing the market microstructure between two South African exchanges
 
 <img src="Figures/A2XLogo.png" width="48"> <img src="Figures/JSELogo.png" width="48">
 

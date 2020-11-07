@@ -10,13 +10,11 @@
 
 
 ### 1. Preliminaries
-using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase, Pipe
+using CSV, DataTables, DataFrames, JLD, Dates, ProgressMeter, Plots, Optim, Statistics, LaTeXStrings, TimeSeries, Distributions, StatsBase, Pipe, ColorSchemes
 cd("C:/Users/Ivan/Documents/PCIJAPTG-A2XvsJSE"); clearconsole()
 JSE_tickers = ["ABG", "AGL", "BTI", "FSR", "NED", "NPN", "SBK", "SHP", "SLM", "SOL"]; A2X_tickers = ["APN", "ARI", "AVI", "CML", "GRT", "MRP", "NPN", "SBK", "SLM", "SNT"]
-# A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-# JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
-A2X_PriceImpact = load("Real Data/A2X/PriceImpact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
-JSE_PriceImpact = load("Real Data/JSE/PriceImpact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
+A2X_PriceImpact = load("Test Data/A2X/Price Impact/A2X_PriceImpact.jld"); A2X_PriceImpact = A2X_PriceImpact["A2X_PriceImpact"]
+JSE_PriceImpact = load("Test Data/JSE/Price Impact/JSE_PriceImpact.jld"); JSE_PriceImpact = JSE_PriceImpact["JSE_PriceImpact"]
 #---------------------------------------------------------------------------
 
 
@@ -226,10 +224,10 @@ function PlotMaster(data, ticker::Vector, param::Vector, side::Symbol; low = -1,
         push!(Impact, i => getMasterImpact(data[i], ADV[i], param, low = low, up = up))
     end
     # Plot the values
-    # plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
-    # plot!()
-    for i in 1:length(ticker)
-        plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i], palette = ColorSchemes.Dark2_5.colors)
+    plot(Impact[ticker[1]][1], Impact[ticker[1]][2], marker = (4, 0.8), scale = :log10, dpi = 300, label = ticker[1], legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), palette = ColorSchemes.tab10.colors)
+    plot!()
+    for i in 2:length(ticker)
+        plot!(Impact[ticker[i]][1], Impact[ticker[i]][2], marker = (4, 0.8), scale = :log10, label = ticker[i])
     end
     current()
     # Add appropriate label
@@ -307,7 +305,7 @@ function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol
         end
     end
     # Plot the values
-    plot(mean(masterscurvesω, dims=1)', mean(masterscurvesΔp, dims=1)', ribbon = 1.96 .* std(masterscurvesΔp, dims=1)', color = col, fillalpha = 0.3, scale = :log10, dpi = 300, label = "Average", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
+    plot!(mean(masterscurvesω, dims=1)', mean(masterscurvesΔp, dims=1)', ribbon = 1.96 .* std(masterscurvesΔp, dims=1)', color = col, fillalpha = 0.3, scale = :log10, dpi = 300, label = "Average", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400))
     # Add appropriate label
     if side == :buy
         xlabel!(L"\textrm{Buyer-Initiated: } \omega^* / C^{\delta}")
@@ -318,18 +316,18 @@ function PlotBootstrap(data, M::Int, ticker::Vector, param::Vector, side::Symbol
     end
 end
 
-PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XBuyParam, :buy, :blue)
 PlotMaster(A2X_PriceImpact, A2X_tickers, A2XBuyParam, :buy)
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XBuyParam, :buy, :blue)
 savefig("Figures/A2XMasterBuy.svg")
 
-PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XSellParam, :sell, :blue)
 PlotMaster(A2X_PriceImpact, A2X_tickers, A2XSellParam, :sell)
+PlotBootstrap(A2X_PriceImpact, 1000, A2X_tickers, A2XSellParam, :sell, :blue)
 savefig("Figures/A2XMasterSell.svg")
 
-PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSEBuyParam, :buy, :red)
 PlotMaster(JSE_PriceImpact, JSE_tickers, JSEBuyParam, :buy)
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSEBuyParam, :buy, :red)
 savefig("Figures/JSEMasterBuy.svg")
 
-PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSESellParam, :sell, :red)
 PlotMaster(JSE_PriceImpact, JSE_tickers, JSESellParam, :sell)
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, JSESellParam, :sell, :red)
 savefig("Figures/JSEMasterSell.svg")

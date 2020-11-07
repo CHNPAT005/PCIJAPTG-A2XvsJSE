@@ -115,7 +115,7 @@ function PlotBootstrap(data, M::Int, ticker::Vector, side::Symbol, cutoff::Float
         push!(Boots, ticker[j] => temp)
     end
     # Plot the values
-    plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[1]][2] .- 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1, palette = ColorSchemes.Dark2_5.colors)
+    plot(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, dpi = 300, label = "", legend = :outertopright, legendtitle = L"\textrm{Ticker}", size = (700,400), fillrange = max.(realImpact[ticker[1]][2] .- 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1, palette = ColorSchemes.tab10.colors)
     plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], scale = :log10, label = "", legend = :outertopright, fillrange = max.(realImpact[ticker[1]][2] .+ 1.96 .* Boots[ticker[1]][2], cutoff), fillalpha = 0.2, fillcolor = 1)
     plot!(realImpact[ticker[1]][1], realImpact[ticker[1]][2], marker = (4, 0.8), scale = :log10, label = ticker[1], legend = :outertopright, markercolor = 1, markerstrokecolor = 1, linecolor = 1)
     for i in 2:length(ticker)
@@ -137,7 +137,7 @@ end
 
 
 ### 3. Visualization
-PlotBootstrap(JSE_PriceImpact, 50, JSE_tickers, :buy, 10^(-6))
+PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, :buy, 10^(-6))
 savefig("Figures/JSEImpactBuy.svg")
 
 PlotBootstrap(JSE_PriceImpact, 1000, JSE_tickers, :sell, 10^(-6))
